@@ -2,7 +2,7 @@
 # Project: Repeatability
 # Author: Isabel Fenton
 # Date created: 9/3/2017
-# Date last edited: 16/3/2017
+# Date last edited: 23/3/2017
 # 
 # Code for analysis of the repeatability results. For more details see Lab book Repeatability.docx
 # 
@@ -17,6 +17,7 @@
 
 # Source files / libraries ------------------------------------------------
 library(cluster) # for the dendrogram
+library(caret) # for the confusion matrix
 
 rm(list = ls())
 
@@ -113,12 +114,36 @@ people.df$numCn[3:nrow(people.df)] <- apply(completeIDs[, p.conf.col], 2, functi
 people.df
 
 # fraction of confident identifications
+sum(completeIDs[, people.col[2+1]] == completeIDs$DefinitiveID & completeIDs[, p.conf.col[1]] == "y", na.rm = TRUE) / sum(completeIDs[, p.conf.col[1]] == "y", na.rm = TRUE)
 
+sum(completeIDs[, people.col[2+1]] == completeIDs$DefinitiveID & completeIDs[, p.conf.col[1]] == "m", na.rm = TRUE) / sum(completeIDs[, p.conf.col[1]] == "m", na.rm = TRUE)
 
+sum(completeIDs[, people.col[2+1]] == completeIDs$DefinitiveID & completeIDs[, p.conf.col[1]] == "n", na.rm = TRUE) / sum(completeIDs[, p.conf.col[1]] == "n", na.rm = TRUE)
+
+people.df$fracCorrY <- NA
+people.df$fracCorrM <- NA
+people.df$fracCorrN <- NA
+for (i in 1:length(p.conf.col)){
+  people.df$fracCorrY[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & completeIDs[, p.conf.col[i]] == "y", na.rm = TRUE) / sum(completeIDs[, p.conf.col[i]] == "y", na.rm = TRUE)
+  people.df$fracCorrM[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & completeIDs[, p.conf.col[i]] == "m", na.rm = TRUE) / sum(completeIDs[, p.conf.col[i]] == "m", na.rm = TRUE)
+  people.df$fracCorrN[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE) / sum(completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE)
+}
+
+hist(people.df$fracCorrY)
+hist(people.df$fracCorrM)
+hist(people.df$fracCorrN)
 
 # 4. Percentage accuracy per specimen ------------------------------------
+sum(completeIDs[2, people.col[2:length(people.col)]] == as.character(completeIDs$DefinitiveID[2]) & completeIDs[2, people.col[2:length(people.col)]] != "lost") / sum(completeIDs[2, people.col[2:length(people.col)]] != "lost")
+
+completeIDs$fracCorr <- apply(completeIDs[, people.col[2:length(people.col)]], 1, function(x) sum(x == x[1] & x != "lost") / sum(x != "lost"))
+
+hist(completeIDs$fracCorr)
 
 # 5. Create a confusion matrix --------------------------------------------
+image(confusionMatrix(completeIDs$DefinitiveID, completeIDs$PurvisID)$table, axes=FALSE)
+
+image(confusionMatrix(rep(completeIDs$DefinitiveID,2), factor(c(as.character(completeIDs$FentonID), as.character(completeIDs$PurvisID)), levels = levels(completeIDs$DefinitiveID)))$table, axes=FALSE)
 
 
 # 6. Dendrogram ---------------------------------------------------------
@@ -127,3 +152,7 @@ png("Figures/dendrogram.png")
 plot(hclust(daisy(data.frame(t(completeIDs[, people.col])))))
 dev.off()
 
+
+
+par(mfrow = c(2,1))
+plot(factor(completeIDs$DefinitiveID), completeIDs$fracCorr, las = 2)
