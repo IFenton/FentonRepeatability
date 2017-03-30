@@ -12,6 +12,7 @@
 # Inputs ------------------------------------------------------------------
 # CompleteIDs.csv
 # Checklist.csv
+# PersonData.csv
 
 # Outputs -----------------------------------------------------------------
 
@@ -27,6 +28,8 @@ str(checklist)
 
 completeIDs <- read.csv("Data/CompleteIDs.csv")
 str(completeIDs)
+
+personData <- read.csv("Data/PersonData.csv")
 
 # set the levels of each ID column to the checklist
 for (i in grep("ID", names(completeIDs), value = TRUE)) {
@@ -140,6 +143,9 @@ completeIDs$fracCorr <- apply(completeIDs[, people.col[2:length(people.col)]], 1
 
 hist(completeIDs$fracCorr)
 
+par(mfrow = c(2,1))
+plot(factor(completeIDs$DefinitiveID), completeIDs$fracCorr, las = 2)
+
 # 5. Create a confusion matrix --------------------------------------------
 image(confusionMatrix(completeIDs$DefinitiveID, completeIDs$PurvisID)$table, axes=FALSE)
 
@@ -153,6 +159,19 @@ plot(hclust(daisy(data.frame(t(completeIDs[, people.col])))))
 dev.off()
 
 
+# 7. Reshaping the dataset for analysis -----------------------------------
+head(completeIDs[,!(colnames(completeIDs) %in% p.conf.col) & colnames(completeIDs) != "fracCorr"])
+IDs.long <- reshape(completeIDs[,!(colnames(completeIDs) %in% p.conf.col) & colnames(completeIDs) != "fracCorr"], varying = list(people.col[-1]), direction = "long", idvar = c("SpecNumber", "DefinitiveID"), times = people.col[-1], timevar = "Person")
+IDs.long$Conf <- factor(c(rep(NA, 100), as.character(unlist(completeIDs[, p.conf.col]))))
+names(IDs.long)[names(IDs.long) == "OriginalID"] <- "ID"
+rownames(IDs.long) <- 1:nrow(IDs.long)
+IDs.long$Person <- gsub("ID", "", IDs.long$Person)
+head(IDs.long)
+tail(IDs.long)
 
-par(mfrow = c(2,1))
-plot(factor(completeIDs$DefinitiveID), completeIDs$fracCorr, las = 2)
+# correct ID?
+IDs.long$Corr <- as.numeric(IDs.long$DefinitiveID == IDs.long$ID)
+
+# adding in person level data
+head(personData)
+IDs.long <- merge(IDs.long, personData)
