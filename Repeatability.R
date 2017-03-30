@@ -19,6 +19,7 @@
 # Source files / libraries ------------------------------------------------
 library(cluster) # for the dendrogram
 library(caret) # for the confusion matrix
+library(colorRamps) # colours
 
 rm(list = ls())
 
@@ -146,20 +147,14 @@ hist(completeIDs$fracCorr)
 par(mfrow = c(2,1))
 plot(factor(completeIDs$DefinitiveID), completeIDs$fracCorr, las = 2)
 
-# 5. Create a confusion matrix --------------------------------------------
-image(confusionMatrix(completeIDs$DefinitiveID, completeIDs$PurvisID)$table, axes=FALSE)
-
-image(confusionMatrix(rep(completeIDs$DefinitiveID,2), factor(c(as.character(completeIDs$FentonID), as.character(completeIDs$PurvisID)), levels = levels(completeIDs$DefinitiveID)))$table, axes=FALSE)
-
-
-# 6. Dendrogram ---------------------------------------------------------
+# 5. Dendrogram ---------------------------------------------------------
 # n.b. use daisy rather than hist, as the data are factors
 png("Figures/dendrogram.png")
 plot(hclust(daisy(data.frame(t(completeIDs[, people.col])))))
 dev.off()
 
 
-# 7. Reshaping the dataset for analysis -----------------------------------
+# 6. Reshaping the dataset for analysis -----------------------------------
 head(completeIDs[,!(colnames(completeIDs) %in% p.conf.col) & colnames(completeIDs) != "fracCorr"])
 IDs.long <- reshape(completeIDs[,!(colnames(completeIDs) %in% p.conf.col) & colnames(completeIDs) != "fracCorr"], varying = list(people.col[-1]), direction = "long", idvar = c("SpecNumber", "DefinitiveID"), times = people.col[-1], timevar = "Person")
 IDs.long$Conf <- factor(c(rep(NA, 100), as.character(unlist(completeIDs[, p.conf.col]))))
@@ -175,3 +170,33 @@ IDs.long$Corr <- as.numeric(IDs.long$DefinitiveID == IDs.long$ID)
 # adding in person level data
 head(personData)
 IDs.long <- merge(IDs.long, personData)
+
+# 7. Create a confusion matrix --------------------------------------------
+# full confusion matrix
+sp.idd <- unique(c(as.character(IDs.long$DefinitiveID), as.character(IDs.long$ID)))
+conf.sp <- confusionMatrix(factor(IDs.long$DefinitiveID, levels = sp.idd), factor(IDs.long$ID, levels = sp.idd))
+par(mfrow = c(1,1))
+par(mar = c(15, 15, 2, 2))
+image(conf.sp$table / rowSums(conf.sp$table), axes = FALSE, col = matlab.like(100))
+axis(1, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 2)
+axis(2, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 1)
+conf.sp$overall
+
+conf.exp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "y"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "y"], levels = sp.idd))
+image(conf.exp$table / rowSums(conf.exp$table), axes = FALSE, col = matlab.like(100))
+axis(1, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 2)
+axis(2, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 1)
+conf.exp$overall
+
+
+conf.conf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "y"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "y"], levels = sp.idd))
+image(conf.conf$table / rowSums(conf.conf$table), axes = FALSE, col = matlab.like(100))
+axis(1, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 2)
+axis(2, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 1)
+conf.conf$overall
+ 
+conf.unconf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "n"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "n"], levels = sp.idd))
+image(conf.unconf$table / rowSums(conf.unconf$table), axes = FALSE, col = matlab.like(100))
+axis(1, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 2)
+axis(2, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 1)
+conf.unconf$overall
