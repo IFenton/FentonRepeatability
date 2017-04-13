@@ -13,6 +13,7 @@
 # CompleteIDs.csv
 # Checklist.csv
 # PersonData.csv
+# sizes_unscaled.csv
 
 # Outputs -----------------------------------------------------------------
 
@@ -31,6 +32,8 @@ completeIDs <- read.csv("Data/CompleteIDs.csv")
 str(completeIDs)
 
 personData <- read.csv("Data/PersonData.csv")
+
+sp.size <- read.csv("Data/sizes_rescaled_LF.csv")
 
 # set the levels of each ID column to the checklist
 for (i in grep("ID", names(completeIDs), value = TRUE)) {
@@ -154,7 +157,7 @@ plot(hclust(daisy(data.frame(t(completeIDs[, people.col])))))
 dev.off()
 
 
-# 6. Reshaping the dataset for analysis -----------------------------------
+# 6. Reshaping the dataset for modelling -----------------------------------
 head(completeIDs[,!(colnames(completeIDs) %in% p.conf.col) & colnames(completeIDs) != "fracCorr"])
 IDs.long <- reshape(completeIDs[,!(colnames(completeIDs) %in% p.conf.col) & colnames(completeIDs) != "fracCorr"], varying = list(people.col[-1]), direction = "long", idvar = c("SpecNumber", "DefinitiveID"), times = people.col[-1], timevar = "Person")
 IDs.long$Conf <- factor(c(rep(NA, 100), as.character(unlist(completeIDs[, p.conf.col]))))
@@ -170,6 +173,10 @@ IDs.long$Corr <- as.numeric(IDs.long$DefinitiveID == IDs.long$ID)
 # adding in person level data
 head(personData)
 IDs.long <- merge(IDs.long, personData)
+
+# adding in the specimen level size data
+head(sp.size)
+IDs.long <- merge(IDs.long, sp.size, by.x = "SpecNumber", by.y = "Item")
 
 # 7. Create a confusion matrix --------------------------------------------
 # full confusion matrix
@@ -200,3 +207,9 @@ image(conf.unconf$table / rowSums(conf.unconf$table), axes = FALSE, col = matlab
 axis(1, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 2)
 axis(2, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 1)
 conf.unconf$overall
+
+
+# 8. Producing summaries for people ---------------------------------------
+write.csv(completeIDs[, c("SpecNumber", "DefinitiveID", "ChealesID", "ChealesC", "fracCorr")], file = "Outputs/Repeatability_Cheales.csv", row.names = FALSE)
+
+
