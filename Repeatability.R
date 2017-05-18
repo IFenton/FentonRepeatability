@@ -11,7 +11,7 @@
 
 # Inputs ------------------------------------------------------------------
 # CompleteIDs.csv
-# Checklist.csv
+# SpeciesData.csv
 # PersonData.csv
 # sizes_unscaled.csv
 
@@ -25,8 +25,8 @@ library(colorRamps) # colours
 rm(list = ls())
 
 # 1. Load in the data -----------------------------------------------------
-checklist <- read.csv("Data/Checklist.csv")
-str(checklist)
+SpeciesData <- read.csv("Data/SpeciesData.csv")
+str(SpeciesData)
 
 completeIDs <- read.csv("Data/CompleteIDs.csv")
 str(completeIDs)
@@ -35,9 +35,9 @@ personData <- read.csv("Data/PersonData.csv")
 
 sp.size <- read.csv("Data/sizes_rescaled_LF.csv")
 
-# set the levels of each ID column to the checklist
+# set the levels of each ID column to the SpeciesData
 for (i in grep("ID", names(completeIDs), value = TRUE)) {
-  completeIDs[,i] <- factor(completeIDs[,i], levels = unique(c(levels(checklist$Species), levels(checklist$ChecklistGenus))))
+  completeIDs[,i] <- factor(completeIDs[,i], levels = unique(c(levels(SpeciesData$Species), levels(SpeciesData$SpeciesDataGenus))))
 }
 rm(i)
 str(completeIDs)
@@ -54,10 +54,10 @@ people.df <- data.frame(Name = people)
 str(people.df)
 
 # 2b. Species level dataframe ---------------------------------------------
-species <- grep(" ", checklist$Species, value = TRUE)
-genera <- unique(grep("^[[:upper:]]", checklist$ChecklistGenus, value = TRUE))
+species <- grep(" ", SpeciesData$Species, value = TRUE)
+genera <- unique(grep("^[[:upper:]]", SpeciesData$SpeciesDataGenus, value = TRUE))
   
-species.df <- data.frame(Species = checklist$Species)
+species.df <- data.frame(Species = SpeciesData$Species)
 
 
 # 3. Person level statistics -----------------------------
@@ -72,9 +72,9 @@ people.df$NumGenID <- apply(completeIDs[, people.col], 2, function(x) length(uni
 
 # Number of specimens lost
 sum(completeIDs$PooleID != "lost")
-sum(completeIDs$PooleID != "lost"& completeIDs$PooleID %in% checklist$Species)
+sum(completeIDs$PooleID != "lost"& completeIDs$PooleID %in% SpeciesData$Species)
 people.df$numLost <- apply(completeIDs[, people.col], 2, function(x) sum(x == "lost"))
-people.df$TotalIndSp <- apply(completeIDs[, people.col], 2, function(x) sum(x != "lost" & x %in% checklist$Species))
+people.df$TotalIndSp <- apply(completeIDs[, people.col], 2, function(x) sum(x != "lost" & x %in% SpeciesData$Species))
 people.df$TotalIndGe <- apply(completeIDs[, people.col], 2, function(x) sum(x != "lost"))
 
 # Fraction of species identified
@@ -170,13 +170,29 @@ tail(IDs.long)
 # correct ID?
 IDs.long$Corr <- as.numeric(IDs.long$DefinitiveID == IDs.long$ID)
 
+# adding in the specimen level size data
+head(sp.size)
+IDs.long <- merge(IDs.long, sp.size[, c(1, 4)], by = "SpecNumber")
+
+# adding in the species level size data
+head(SpeciesData)
+IDs.long <- merge(IDs.long, SpeciesData[, 2:ncol(SpeciesData)], by.x = "DefinitiveID", by.y = "Species")
+
+# linear model of size against accuracy
+tmp <- glm(Corr~ log(Rescaled2), data = IDs.long[!is.na(IDs.long$Corr),], family = binomial)
+tmp2 <- predict(tmp, newdata = data.frame(Rescaled2 = seq(180, 1050, length.out = 100)), type = "response")
+summary(tmp2)
+plot(IDs.long$Corr~ log(IDs.long$Rescaled2))
+lines(log(seq(180, 1050, length.out = 100)), tmp2)
+
+head(IDs.long)
+tail(IDs.long)
+
 # adding in person level data
 head(personData)
 IDs.long <- merge(IDs.long, personData)
 
-# adding in the specimen level size data
-head(sp.size)
-IDs.long <- merge(IDs.long, sp.size, by.x = "SpecNumber", by.y = "Item")
+
 
 # 7. Create a confusion matrix --------------------------------------------
 # full confusion matrix
