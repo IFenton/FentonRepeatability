@@ -4,7 +4,7 @@
 # Date created: 9/3/2017
 # Date last edited: 23/3/2017
 # 
-# Code for analysis of the repeatability results. For more details see Lab book Repeatability.docx
+# Code for analysis of the repeatability results. For more details see Lab book Repeatability.docx)
 # 
 # Previous file: size histogram.R
 # Next file:
@@ -13,7 +13,8 @@
 # CompleteIDs.csv
 # SpeciesData.csv
 # PersonData.csv
-# sizes_unscaled.csv
+# sizes_unscaled.csv - the initial measurements
+# measurements2.csv - the final (accurate) measurements
 
 # Outputs -----------------------------------------------------------------
 
@@ -33,14 +34,15 @@ str(completeIDs)
 
 personData <- read.csv("Data/PersonData.csv")
 
-sp.size <- read.csv("Data/sizes_rescaled_LF.csv")
+sp.size <- read.csv("Data/Measurements2.csv")
 
 # set the levels of each ID column to the SpeciesData
 for (i in grep("ID", names(completeIDs), value = TRUE)) {
-  completeIDs[,i] <- factor(completeIDs[,i], levels = unique(c(levels(SpeciesData$Species), levels(SpeciesData$SpeciesDataGenus))))
+  completeIDs[,i] <- factor(completeIDs[,i], levels = unique(c(levels(SpeciesData$Species), levels(SpeciesData$ChecklistGenus))))
 }
 rm(i)
 str(completeIDs)
+
 
 # 2. Create dataframes for storing the results -------------------------------
 
@@ -57,9 +59,6 @@ str(people.df)
 species <- grep(" ", SpeciesData$Species, value = TRUE)
 genera <- unique(grep("^[[:upper:]]", SpeciesData$SpeciesDataGenus, value = TRUE))
   
-species.df <- data.frame(Species = SpeciesData$Species)
-
-
 # 3. Person level statistics -----------------------------
 
 # 3a. All individuals -----------------------------------------------------
@@ -172,7 +171,7 @@ IDs.long$Corr <- as.numeric(IDs.long$DefinitiveID == IDs.long$ID)
 
 # adding in the specimen level size data
 head(sp.size)
-IDs.long <- merge(IDs.long, sp.size[, c(1, 4)], by = "SpecNumber")
+IDs.long <- merge(IDs.long, sp.size[, c(1, 4)], by.x = "SpecNumber", by.y = "Feature.Name")
 
 # adding in the species level size data
 head(SpeciesData)
