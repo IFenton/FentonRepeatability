@@ -156,6 +156,9 @@ sum(gsub(" .*", "", completeIDs$FentonID) == gsub(" .*", "", completeIDs$Definit
 people.df$fracCorrGen <- apply(completeIDs[, people.col], 2, function(x) sum(gsub(" .*", "", x) == gsub(" .*", "", completeIDs$DefinitiveID)) / sum(x != "lost"))
 mean(people.df$fracCorrGen)
 
+people.df$numUnID <- NA
+people.df$numUnID <- apply(completeIDs[, people.col], 2, function(x) sum(x == "unIDd", na.rm = TRUE))
+
 # Split by confidence 
 # number of identifications by confidence (working at species level)
 sum(completeIDs$FentonC == "y", na.rm = TRUE)
@@ -188,6 +191,8 @@ for (i in 1:length(p.conf.col)){
   people.df$fracCorrN[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE) / sum(completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE)
   people.df$fracCorrNwoUID[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & completeIDs[, p.conf.col[i]] == "n" & completeIDs[, people.col[2+i]] != "unIDd", na.rm = TRUE) / sum(completeIDs[, p.conf.col[i]] == "n" & completeIDs[, people.col[2+i]] != "unIDd", na.rm = TRUE, na.rm = TRUE)
 }
+# where there are no specimens classified as 'n', this is currently giving NaN
+people.df[is.na(people.df)] <- NA
 
 hist(people.df$fracCorrY)
 hist(people.df$fracCorrM)
@@ -196,28 +201,46 @@ hist(people.df$fracCorrNwoUID)
 
 # box plot of percentage accuracy split by students and Experienced
 png("Figures/Percent accuracy.png")
-with(people.df, boxplot(fracCorrSp ~ Experienced, ylim = c(0, 1), xlim = c(-0.5, 2.5), xaxt = "n", boxwex = 0.4, col = c("blue3", "purple2"), cex.axis = 1.5, bty = "l", las = 1))
+with(people.df, boxplot(fracCorrSp ~ Experienced, ylim = c(0, 1), xlim = c(-0.5, 2.5), xaxt = "n", boxwex = 0.4, col = c("blue3", "purple2"), cex.axis = 1.5, las = 1))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSp, add = TRUE, at = 0, boxwex = 0.8, col = "red2", xaxt = "n", yaxt = "n"))
 axis(1, c(0,1,2), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
 text(0:2, 0.95, paste("(", c(sum(!is.na(people.df$Experienced)), sum(people.df$Experienced == "Experienced", na.rm = TRUE), sum(people.df$Experienced == "Student", na.rm = TRUE)), ")", sep = ""))
 dev.off()
 
+median(people.df$fracCorrSp[!is.na(people.df$Experienced)])
+median(people.df$fracCorrSp[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrSp[people.df$Experienced == "Student"], na.rm = TRUE)
+
 # percentage accuracy by confidence
 png("Figures/Percent accuracy conf.png")
-plot(NULL, bty = "l", ylim = c(0, 1), xlim = c(0, 4.8), xaxt = "n", cex.axis = 1.5, xlab = "", ylab = "")
+plot(NULL, ylim = c(0, 1), xlim = c(0, 4.8), xaxt = "n", cex.axis = 1.5, xlab = "", ylab = "", las = 1)
 with(people.df, boxplot(fracCorrY ~ Experienced, boxwex = 0.2, col = c("blue3", "purple2"), at = c(1.8, 3.3), add = TRUE, xaxt = "n", yaxt = "n", xlim = c(0, 4.8)))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
 axis(1, c(0.6,2.1,3.6), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
 
-with(people.df, boxplot(fracCorrM ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE))
+with(people.df, boxplot(fracCorrM ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrM, add = TRUE, at = 0.6, boxwex = 0.4, col = "firebrick2", xaxt = "n", yaxt = "n"))
 
-with(people.df, boxplot(fracCorrNwoUID ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("steelblue3", "plum2"), cex.axis = 1.5, at = c(2.4, 3.9), add = TRUE))
+with(people.df, boxplot(fracCorrNwoUID ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("steelblue3", "plum2"), cex.axis = 1.5, at = c(2.4, 3.9), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrNwoUID, add = TRUE, at = 0.9, boxwex = 0.4, col = "indianred2", xaxt = "n", yaxt = "n"))
 
-legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n")
+legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n", cex = 1.2)
 dev.off()
 
+# percent correct if yes
+median(people.df$fracCorrY[!is.na(people.df$Experienced)])
+median(people.df$fracCorrY[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrY[people.df$Experienced == "Student"], na.rm = TRUE)
+
+# percent correct if maybe
+median(people.df$fracCorrM[!is.na(people.df$Experienced)])
+median(people.df$fracCorrM[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrM[people.df$Experienced == "Student"], na.rm = TRUE)
+
+# percent correct if no
+median(people.df$fracCorrNwoUID[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrNwoUID[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrNwoUID[people.df$Experienced == "Student"], na.rm = TRUE)
 
 # percentage accuracy by size (based on mean diameter)
 people.df$fracCorr400 <- NA
