@@ -2,7 +2,7 @@
 # Project: Repeatability
 # Author: Isabel Fenton
 # Date created: 9/3/2017
-# Date last edited: 31/7/2017
+# Date last edited: 2/8/2017
 # 
 # Code for analysis of the repeatability results. For more details see Lab book Repeatability.docx)
 # 
@@ -114,7 +114,7 @@ people.df$Experienced <- factor(c(rep(NA, 2), rep("Experienced", 4), rep("Studen
 str(people.df)
 
 # 3b. Person level statistics -----------------------------
-# All individuals 
+## All individuals 
 # Number of species identified
 people.df$NumSpID <- apply(completeIDs[, people.col], 2, function(x) sum(unique(x) %in% species))
 
@@ -138,7 +138,7 @@ people.df$fracSpecIDd <- people.df$NumSpID / people.df$NumSpID[people.df$Name ==
 people.df$fracGenIDd <- people.df$NumGenID / people.df$NumGenID[people.df$Name == "Definitive"]
 
 
-# Percentage accuracy per person
+## Percentage accuracy per person
 sum(completeIDs[,grep("Fenton", names(completeIDs))[1]] == completeIDs$DefinitiveID) / sum(completeIDs[,grep("Fenton", names(completeIDs))[1]] != "lost")
 
 # species
@@ -159,8 +159,20 @@ mean(people.df$fracCorrGen)
 people.df$numUnID <- NA
 people.df$numUnID <- apply(completeIDs[, people.col], 2, function(x) sum(x == "unIDd", na.rm = TRUE))
 
-# Split by confidence 
-# number of identifications by confidence (working at species level)
+# box plot of percentage accuracy split by students and Experienced
+png("Figures/Percent accuracy.png")
+with(people.df, boxplot(fracCorrSp ~ Experienced, ylim = c(0, 1), xlim = c(-0.5, 2.5), xaxt = "n", boxwex = 0.4, col = c("blue3", "purple2"), cex.axis = 1.5, las = 1))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSp, add = TRUE, at = 0, boxwex = 0.8, col = "red2", xaxt = "n", yaxt = "n"))
+axis(1, c(0,1,2), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
+text(0:2, 0.95, paste("(", c(sum(!is.na(people.df$Experienced)), sum(people.df$Experienced == "Experienced", na.rm = TRUE), sum(people.df$Experienced == "Student", na.rm = TRUE)), ")", sep = ""))
+dev.off()
+
+median(people.df$fracCorrSp[!is.na(people.df$Experienced)])
+median(people.df$fracCorrSp[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrSp[people.df$Experienced == "Student"], na.rm = TRUE)
+
+## Split by confidence 
+# number of identifications by confidence (working at specimen level)
 sum(completeIDs$FentonC == "y", na.rm = TRUE)
 
 people.df$numCy <- NA
@@ -199,18 +211,6 @@ hist(people.df$fracCorrM)
 hist(people.df$fracCorrN)
 hist(people.df$fracCorrNwoUID)
 
-# box plot of percentage accuracy split by students and Experienced
-png("Figures/Percent accuracy.png")
-with(people.df, boxplot(fracCorrSp ~ Experienced, ylim = c(0, 1), xlim = c(-0.5, 2.5), xaxt = "n", boxwex = 0.4, col = c("blue3", "purple2"), cex.axis = 1.5, las = 1))
-with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSp, add = TRUE, at = 0, boxwex = 0.8, col = "red2", xaxt = "n", yaxt = "n"))
-axis(1, c(0,1,2), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
-text(0:2, 0.95, paste("(", c(sum(!is.na(people.df$Experienced)), sum(people.df$Experienced == "Experienced", na.rm = TRUE), sum(people.df$Experienced == "Student", na.rm = TRUE)), ")", sep = ""))
-dev.off()
-
-median(people.df$fracCorrSp[!is.na(people.df$Experienced)])
-median(people.df$fracCorrSp[people.df$Experienced == "Experienced"], na.rm = TRUE)
-median(people.df$fracCorrSp[people.df$Experienced == "Student"], na.rm = TRUE)
-
 # percentage accuracy by confidence
 png("Figures/Percent accuracy conf.png")
 plot(NULL, ylim = c(0, 1), xlim = c(0, 4.8), xaxt = "n", cex.axis = 1.5, xlab = "", ylab = "", las = 1)
@@ -242,31 +242,274 @@ median(people.df$fracCorrNwoUID[!is.na(people.df$Experienced)], na.rm = TRUE)
 median(people.df$fracCorrNwoUID[people.df$Experienced == "Experienced"], na.rm = TRUE)
 median(people.df$fracCorrNwoUID[people.df$Experienced == "Student"], na.rm = TRUE)
 
+
+## accuracy based on species level confidence
+# generate columns
+people.df$numcSY <- NA
+people.df$numcSM <- NA
+people.df$numcSN <- NA
+people.df$fracCorrSY <- NA
+people.df$fracCorrSM <- NA
+people.df$fracCorrSN <- NA
+
+sum(completeIDs[, people.col[2+5]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[5+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y", na.rm = TRUE) / sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[5+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, people.col[2+5]] != "lost", na.rm = TRUE)
+
+for (i in 1:(length(people.col) - 2)){
+  # sum (correct ID and confident in species) / sum(confident in species and not lost)
+  people.df$numcSY[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, people.col[2+i]] != "lost", na.rm = TRUE)
+  people.df$fracCorrSY[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y", na.rm = TRUE) / people.df$numcSY[2 + i]
+  people.df$numcSM[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "m" & completeIDs[, people.col[2+i]] != "lost", na.rm = TRUE)
+  people.df$fracCorrSM[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "m", na.rm = TRUE) / people.df$numcSM[2 + i] 
+  people.df$numcSN[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, people.col[2+i]] != "lost", na.rm = TRUE) 
+  people.df$fracCorrSN[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n", na.rm = TRUE) / people.df$numcSN[2 + i]
+}
+
+png("Figures/Percent accuracy species level.png")
+plot(NULL, ylim = c(0, 1), xlim = c(0, 4.8), xaxt = "n", cex.axis = 1.5, xlab = "", ylab = "", las = 2)
+with(people.df, boxplot(fracCorrSN ~ Experienced, boxwex = 0.2, col = c("steelblue3", "plum2"), at = c(2.4, 3.9), add = TRUE, xaxt = "n", yaxt = "n", xlim = c(0, 4.8)))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSN, add = TRUE, at = 0.9, boxwex = 0.4, col = "indianred2", xaxt = "n", yaxt = "n"))
+axis(1, c(0.6,2.1,3.6), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
+
+with(people.df, boxplot(fracCorrSM ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE, yaxt = "n"))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSM, add = TRUE, at = 0.6, boxwex = 0.4, col = "firebrick2", xaxt = "n", yaxt = "n"))
+
+with(people.df, boxplot(fracCorrSY ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(1.8, 3.3), add = TRUE, yaxt = "n"))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
+
+legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n")
+dev.off()
+
+# percent correct if yes
+median(people.df$fracCorrSY[!is.na(people.df$Experienced)])
+median(people.df$fracCorrSY[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrSY[people.df$Experienced == "Student"], na.rm = TRUE)
+
+# percent correct if maybe
+median(people.df$fracCorrSM[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrSM[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrSM[people.df$Experienced == "Student"], na.rm = TRUE)
+
+# percent correct if no
+median(people.df$fracCorrSN[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrSN[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrSN[people.df$Experienced == "Student"], na.rm = TRUE)
+
+
+## accuracy based on species and specimen level confidence
 # percentage accuracy by size (based on mean diameter)
+people.df$numcYy <- NA
+people.df$numcYm <- NA
+people.df$numcYn <- NA
+people.df$numcMy <- NA
+people.df$numcMm <- NA
+people.df$numcMn <- NA
+people.df$numcNy <- NA
+people.df$numcNm <- NA
+people.df$numcNn <- NA
+people.df$fracCorrYy <- NA
+people.df$fracCorrYm <- NA
+people.df$fracCorrYn <- NA
+people.df$fracCorrMy <- NA
+people.df$fracCorrMm <- NA
+people.df$fracCorrMn <- NA
+people.df$fracCorrNy <- NA
+people.df$fracCorrNm <- NA
+people.df$fracCorrNn <- NA
+
+sum(completeIDs[, people.col[2+5]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[5+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, p.conf.col[5]] == "y", na.rm = TRUE) / sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[5+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, people.col[2+5]] != "lost" & completeIDs[, p.conf.col[5]] == "y", na.rm = TRUE)
+
+sum(completeIDs[, people.col[2+5]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[5+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, p.conf.col[5]] == "y", na.rm = TRUE) / sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[5+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, people.col[2+5]] != "lost" & completeIDs[, p.conf.col[5]] == "y", na.rm = TRUE)
+
+for (i in 1:(length(people.col) - 2)){
+  people.df$numcYy[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, people.col[2+i]] != "lost" & completeIDs[, p.conf.col[i]] == "y", na.rm = TRUE)
+  people.df$fracCorrYy[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, p.conf.col[i]] == "y", na.rm = TRUE) / people.df$numcYy[2 + i]
+  people.df$numcYm[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, people.col[2+i]] != "lost" & completeIDs[, p.conf.col[i]] == "m", na.rm = TRUE)
+  people.df$fracCorrYm[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, p.conf.col[i]] == "m", na.rm = TRUE) / people.df$numcYm[2 + i]
+  people.df$numcYn[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, people.col[2+i]] != "lost" & completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE)
+  people.df$fracCorrYn[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "y" & completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE) / people.df$numcYn[2 + i]
+  people.df$numcMy[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "m" & completeIDs[, people.col[2+i]] != "lost" & completeIDs[, p.conf.col[i]] == "y", na.rm = TRUE)
+  people.df$fracCorrMy[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "m" & completeIDs[, p.conf.col[i]] == "y", na.rm = TRUE) / people.df$numcMy[2 + i] 
+  people.df$numcMm[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "m" & completeIDs[, people.col[2+i]] != "lost" & completeIDs[, p.conf.col[i]] == "m", na.rm = TRUE)
+  people.df$fracCorrMm[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "m" & completeIDs[, p.conf.col[i]] == "m", na.rm = TRUE) / people.df$numcMm[2 + i]
+  people.df$numcMn[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "m" & completeIDs[, people.col[2+i]] != "lost" & completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE)
+  people.df$fracCorrMn[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "m" & completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE) / people.df$numcMn[2 + i]
+  people.df$numcNy[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, people.col[2+i]] != "lost" & completeIDs[, p.conf.col[i]] == "y", na.rm = TRUE)
+  people.df$fracCorrNy[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, p.conf.col[i]] == "y", na.rm = TRUE) / people.df$numcNy[2 + i]
+  people.df$numcNm[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, people.col[2+i]] != "lost" & completeIDs[, p.conf.col[i]] == "m", na.rm = TRUE)
+  people.df$fracCorrNm[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, p.conf.col[i]] == "m", na.rm = TRUE) / people.df$numcNm[2 + i] 
+  people.df$numcNn[2 + i] <- sum(sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, people.col[2+i]] != "lost" & completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE)
+  people.df$fracCorrNn[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE) / people.df$numcNn[2 + i] 
+}
+
+png("Figures/Percent accuracy species level.png")
+plot(NULL, ylim = c(0, 1), xlim = c(0, 4.8), xaxt = "n", cex.axis = 1.5, xlab = "", ylab = "", las = 2)
+with(people.df, boxplot(fracCorrSN ~ Experienced, boxwex = 0.2, col = c("steelblue3", "plum2"), at = c(2.4, 3.9), add = TRUE, xaxt = "n", yaxt = "n", xlim = c(0, 4.8)))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSN, add = TRUE, at = 0.9, boxwex = 0.4, col = "indianred2", xaxt = "n", yaxt = "n"))
+axis(1, c(0.6,2.1,3.6), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
+
+with(people.df, boxplot(fracCorrSM ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE, yaxt = "n"))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSM, add = TRUE, at = 0.6, boxwex = 0.4, col = "firebrick2", xaxt = "n", yaxt = "n"))
+
+with(people.df, boxplot(fracCorrSY ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(1.8, 3.3), add = TRUE, yaxt = "n"))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
+
+legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n")
+dev.off()
+
+# percent correct if Yes yes
+median(people.df$fracCorrYy[!is.na(people.df$Experienced)])
+median(people.df$fracCorrYy[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrYy[people.df$Experienced == "Student"], na.rm = TRUE)
+# percent correct if Yes maybe
+median(people.df$fracCorrYm[!is.na(people.df$Experienced)])
+median(people.df$fracCorrYm[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrYm[people.df$Experienced == "Student"], na.rm = TRUE)
+# percent correct if Yes no
+median(people.df$fracCorrYn[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrYn[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrYn[people.df$Experienced == "Student"], na.rm = TRUE)
+
+# percent correct if Maybe yes
+median(people.df$fracCorrMy[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrMy[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrMy[people.df$Experienced == "Student"], na.rm = TRUE)
+# percent correct if Maybe maybe
+median(people.df$fracCorrMm[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrMm[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrMm[people.df$Experienced == "Student"], na.rm = TRUE)
+# percent correct if Maybe no
+median(people.df$fracCorrMn[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrMn[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrMn[people.df$Experienced == "Student"], na.rm = TRUE)
+
+# percent correct if No yes
+median(people.df$fracCorrNy[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrNy[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrNy[people.df$Experienced == "Student"], na.rm = TRUE)
+# percent correct if No maybe
+median(people.df$fracCorrNm[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrNm[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrNm[people.df$Experienced == "Student"], na.rm = TRUE)
+# percent correct if No no
+median(people.df$fracCorrNn[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorrNn[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorrNn[people.df$Experienced == "Student"], na.rm = TRUE)
+
+# how many people does this apply to
+sum(!is.na(people.df$fracCorrYy))
+sum(!is.na(people.df$fracCorrYm))
+sum(!is.na(people.df$fracCorrYn))
+sum(!is.na(people.df$fracCorrMy))
+sum(!is.na(people.df$fracCorrMm))
+sum(!is.na(people.df$fracCorrMn))
+sum(!is.na(people.df$fracCorrNy))
+sum(!is.na(people.df$fracCorrNm))
+sum(!is.na(people.df$fracCorrNn))
+sum(!is.na(people.df$fracCorrYy[people.df$Experienced == "Experienced"]))
+sum(!is.na(people.df$fracCorrYm[people.df$Experienced == "Experienced"]))
+sum(!is.na(people.df$fracCorrYn[people.df$Experienced == "Experienced"]))
+sum(!is.na(people.df$fracCorrMy[people.df$Experienced == "Experienced"]))
+sum(!is.na(people.df$fracCorrMm[people.df$Experienced == "Experienced"]))
+sum(!is.na(people.df$fracCorrMn[people.df$Experienced == "Experienced"]))
+sum(!is.na(people.df$fracCorrNy[people.df$Experienced == "Experienced"]))
+sum(!is.na(people.df$fracCorrNm[people.df$Experienced == "Experienced"]))
+sum(!is.na(people.df$fracCorrNn[people.df$Experienced == "Experienced"]))
+sum(!is.na(people.df$fracCorrYy[people.df$Experienced == "Student"]))
+sum(!is.na(people.df$fracCorrYm[people.df$Experienced == "Student"]))
+sum(!is.na(people.df$fracCorrYn[people.df$Experienced == "Student"]))
+sum(!is.na(people.df$fracCorrMy[people.df$Experienced == "Student"]))
+sum(!is.na(people.df$fracCorrMm[people.df$Experienced == "Student"]))
+sum(!is.na(people.df$fracCorrMn[people.df$Experienced == "Student"]))
+sum(!is.na(people.df$fracCorrNy[people.df$Experienced == "Student"]))
+sum(!is.na(people.df$fracCorrNm[people.df$Experienced == "Student"]))
+sum(!is.na(people.df$fracCorrNn[people.df$Experienced == "Student"]))
+
+# number of Yes yes
+median(people.df$numcYy[!is.na(people.df$Experienced) & people.df$numcYy > 0])
+median(people.df$numcYy[people.df$Experienced == "Experienced" & people.df$numcYy > 0], na.rm = TRUE)
+median(people.df$numcYy[people.df$Experienced == "Student" & people.df$numcYy > 0], na.rm = TRUE)
+# number of Yes maybe
+median(people.df$numcYm[!is.na(people.df$Experienced) & people.df$numcYm > 0])
+median(people.df$numcYm[people.df$Experienced == "Experienced" & people.df$numcYm > 0], na.rm = TRUE)
+median(people.df$numcYm[people.df$Experienced == "Student" & people.df$numcYm > 0], na.rm = TRUE)
+# number of Yes no
+median(people.df$numcYn[!is.na(people.df$Experienced) & people.df$numcYn > 0], na.rm = TRUE)
+median(people.df$numcYn[people.df$Experienced == "Experienced" & people.df$numcYn > 0], na.rm = TRUE)
+median(people.df$numcYn[people.df$Experienced == "Student" & people.df$numcYn > 0], na.rm = TRUE)
+
+# number of Maybe yes
+median(people.df$numcMy[!is.na(people.df$Experienced) & people.df$numcMy > 0], na.rm = TRUE)
+median(people.df$numcMy[people.df$Experienced == "Experienced" & people.df$numcMy > 0], na.rm = TRUE)
+median(people.df$numcMy[people.df$Experienced == "Student" & people.df$numcMy > 0], na.rm = TRUE)
+# number of Maybe maybe
+median(people.df$numcMm[!is.na(people.df$Experienced) & people.df$numcMm > 0], na.rm = TRUE)
+median(people.df$numcMm[people.df$Experienced == "Experienced" & people.df$numcMm > 0], na.rm = TRUE)
+median(people.df$numcMm[people.df$Experienced == "Student" & people.df$numcMm > 0], na.rm = TRUE)
+# number of Maybe no
+median(people.df$numcMn[!is.na(people.df$Experienced) & people.df$numcMn > 0], na.rm = TRUE)
+median(people.df$numcMn[people.df$Experienced == "Experienced" & people.df$numcMn > 0], na.rm = TRUE)
+median(people.df$numcMn[people.df$Experienced == "Student" & people.df$numcMn > 0], na.rm = TRUE)
+
+# number of No yes
+median(people.df$numcNy[!is.na(people.df$Experienced) & people.df$numcNy > 0], na.rm = TRUE)
+median(people.df$numcNy[people.df$Experienced == "Experienced" & people.df$numcNy > 0], na.rm = TRUE)
+median(people.df$numcNy[people.df$Experienced == "Student" & people.df$numcNy > 0], na.rm = TRUE)
+# number of No maybe
+median(people.df$numcNm[!is.na(people.df$Experienced) & people.df$numcNm > 0], na.rm = TRUE)
+median(people.df$numcNm[people.df$Experienced == "Experienced" & people.df$numcNm > 0], na.rm = TRUE)
+median(people.df$numcNm[people.df$Experienced == "Student" & people.df$numcNm > 0], na.rm = TRUE)
+# number of No no
+median(people.df$numcNn[!is.na(people.df$Experienced) & people.df$numcNn > 0], na.rm = TRUE)
+median(people.df$numcNn[people.df$Experienced == "Experienced" & people.df$numcNn > 0], na.rm = TRUE)
+median(people.df$numcNn[people.df$Experienced == "Student" & people.df$numcNn > 0], na.rm = TRUE)
+
+
+## percentage accuracy by size (based on mean diameter)
+# calculating percentage correct
 people.df$fracCorr400 <- NA
 people.df$fracCorr200 <- NA
 people.df$fracCorr125 <- NA
+
+sum(completeIDs[, people.col[2+5]] == completeIDs$DefinitiveID & sp.size$MeanDia < 200, na.rm = TRUE) / sum(sp.size$MeanDia < 200 & completeIDs[, people.col[2+5]] != "lost", na.rm = TRUE)
+
 for (i in 1:length(p.conf.col)){
   people.df$fracCorr125[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sp.size$MeanDia < 200, na.rm = TRUE) / sum(sp.size$MeanDia < 200 & completeIDs[, people.col[2+i]] != "lost", na.rm = TRUE)
   people.df$fracCorr200[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sp.size$MeanDia < 400 & sp.size$MeanDia > 200, na.rm = TRUE) / sum(sp.size$MeanDia < 400 & sp.size$MeanDia > 200 & completeIDs[, people.col[2+i]] != "lost", na.rm = TRUE)
   people.df$fracCorr400[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sp.size$MeanDia > 400, na.rm = TRUE) / sum(sp.size$MeanDia > 400 & completeIDs[, people.col[2+i]] != "lost", na.rm = TRUE)
 }
 
-
 png("Figures/Percent accuracy size.png")
-plot(NULL, bty = "l", ylim = c(0, 1), xlim = c(0, 4.8), xaxt = "n", cex.axis = 1.5, xlab = "", ylab = "")
+plot(NULL, bty = "l", ylim = c(0, 1), xlim = c(0, 4.8), xaxt = "n", cex.axis = 1.5, xlab = "", ylab = "", las = 2)
 with(people.df, boxplot(fracCorr125 ~ Experienced, boxwex = 0.2, col = c("steelblue3", "plum2"), at = c(1.8, 3.3), add = TRUE, xaxt = "n", yaxt = "n", xlim = c(0, 4.8)))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorr125, add = TRUE, at = 0.3, boxwex = 0.4, col = "indianred2", xaxt = "n", yaxt = "n"))
 axis(1, c(0.6,2.1,3.6), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
 
-with(people.df, boxplot(fracCorr200 ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE))
+with(people.df, boxplot(fracCorr200 ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorr200, add = TRUE, at = 0.6, boxwex = 0.4, col = "firebrick2", xaxt = "n", yaxt = "n"))
 
-with(people.df, boxplot(fracCorr400 ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(2.4, 3.9), add = TRUE))
+with(people.df, boxplot(fracCorr400 ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(2.4, 3.9), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorr400, add = TRUE, at = 0.9, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
 
-legend("topright", c("400", "200", "125"), fill = c("black", "grey50", "grey80"), bty = "n")
+legend(3.6, 0.14, c(expression(paste(">400 ", mu, "m")), expression(paste("200-400 ", mu, "m")), expression(paste("125-200 ", mu, "m"))), fill = c("black", "grey50", "grey80"), bty = "n")
 dev.off()
+
+# percent correct if 125-200
+median(people.df$fracCorr125[!is.na(people.df$Experienced)])
+median(people.df$fracCorr125[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorr125[people.df$Experienced == "Student"], na.rm = TRUE)
+
+# percent correct if 200-400
+median(people.df$fracCorr200[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorr200[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorr200[people.df$Experienced == "Student"], na.rm = TRUE)
+
+# percent correct if >400
+median(people.df$fracCorr400[!is.na(people.df$Experienced)], na.rm = TRUE)
+median(people.df$fracCorr400[people.df$Experienced == "Experienced"], na.rm = TRUE)
+median(people.df$fracCorr400[people.df$Experienced == "Student"], na.rm = TRUE)
+
+
+
 # 4. Percentage accuracy per specimen ------------------------------------
 sum(completeIDs[2, people.col[2:length(people.col)]] == as.character(completeIDs$DefinitiveID[2]) & completeIDs[2, people.col[2:length(people.col)]] != "lost") / sum(completeIDs[2, people.col[2:length(people.col)]] != "lost")
 
