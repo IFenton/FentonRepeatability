@@ -276,7 +276,7 @@ with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSM, add = TRUE,
 with(people.df, boxplot(fracCorrSY ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(1.8, 3.3), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
 
-legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n")
+legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n", cex = 1.2)
 dev.off()
 
 # percent correct if yes
@@ -353,7 +353,7 @@ with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSM, add = TRUE,
 with(people.df, boxplot(fracCorrSY ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(1.8, 3.3), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
 
-legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n")
+legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n", cex = 1.2)
 dev.off()
 
 # percent correct if Yes yes
@@ -490,7 +490,7 @@ with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorr200, add = TRUE
 with(people.df, boxplot(fracCorr400 ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(2.4, 3.9), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorr400, add = TRUE, at = 0.9, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
 
-legend(3.6, 0.14, c(expression(paste(">400 ", mu, "m")), expression(paste("200-400 ", mu, "m")), expression(paste("125-200 ", mu, "m"))), fill = c("black", "grey50", "grey80"), bty = "n")
+legend(3.4, 0.16, c(expression(paste(">400 ", mu, "m")), expression(paste("200-400 ", mu, "m")), expression(paste("125-200 ", mu, "m"))), fill = c("black", "grey50", "grey80"), bty = "n", cex = 1.2)
 dev.off()
 
 # percent correct if 125-200
