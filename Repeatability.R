@@ -25,6 +25,8 @@ library(colorRamps) # colours
 library(ade4) # for distinctiveness
 library(sjPlot) # plotting glms
 library(lme4)
+dev.off()
+par.def <- par()
 
 rm(list = ls())
 
@@ -517,6 +519,7 @@ completeIDs$fracCorr <- apply(completeIDs[, people.col[2:length(people.col)]], 1
 
 hist(completeIDs$fracCorr)
 
+
 par(mfrow = c(2,1))
 plot(factor(completeIDs$DefinitiveID), completeIDs$fracCorr, las = 2)
 par(mfrow = c(1,1))
@@ -729,8 +732,36 @@ par(mar = c(15, 15, 2, 2))
 image(t(conf.sp$table / rowSums(conf.sp$table)), col = c("grey70", matlab.like(1000)), ylim = c((28*((1+1/43))/44) - (1+1/43)/44/2, -(1+1/43)/44/2 ), axes = FALSE)
 axis(1, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 2)
 axis(2, seq(0,(27*((1+1/43))/44), length.out = length(sp.idd[rowSums(conf.sp$table) > 0])), sp.idd[rowSums(conf.sp$table) > 0], las = 1)
+par(par.def)
 dev.off()
 
+png("Figures/confusion_full_grey_key.png", 1000, 700)
+par(fig = c(0, 0.9, 0, 1))
+par(mar = c(15, 15, 2, 2))
+image(t(conf.sp$table / rowSums(conf.sp$table)), col = c("grey70", matlab.like(1000)), ylim = c((28*((1+1/43))/44) - (1+1/43)/44/2, -(1+1/43)/44/2 ), axes = FALSE)
+
+xaxis.names <- sp.idd
+axis(1, seq(0,1, length.out = length(xaxis.names))[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], xaxis.names[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], las = 2, font = 3, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[-grep("^[A-Z]", xaxis.names)], xaxis.names[-grep("^[A-Z]", xaxis.names)], las = 2, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[str_count(xaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", xaxis.names[str_count(xaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", xaxis.names[str_count(xaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+yaxis.names <- sp.idd[rowSums(conf.sp$table) > 0]
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 1], yaxis.names[str_count(yaxis.names, " ") == 1], las = 1, font = 3, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[-grep("^[A-Z]", yaxis.names)], yaxis.names[-grep("^[A-Z]", yaxis.names)], las = 1, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", yaxis.names[str_count(yaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", yaxis.names[str_count(yaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+
+# add key
+par(fig = c(0.9, 1, 0.35, 1), new = TRUE)
+par(mai = c(1, 0.4, 0.8, 0.5))
+names.key <- rep("", 101)
+names.key[seq(1, 101, by = 20)] <- seq(0.0, 1.0, by = 0.2)
+key <- rep(1, 101)
+barplot(key, names.arg = names.key, main = "\nFraction of\nSpecimens", horiz = TRUE, space = 0, border = NA, 
+        col = c("grey70", matlab.like(100)), fg = "white", las = 1, mgp = c(0, 1, 0), xaxt = "n", cex.names = 1, 
+        cex.main = 1.1, font.main = 1)
+par(par.def)
+dev.off() 
 
 
 conf.sp$overall
