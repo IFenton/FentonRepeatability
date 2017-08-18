@@ -2,7 +2,7 @@
 # Project: Repeatability
 # Author: Isabel Fenton
 # Date created: 9/3/2017
-# Date last edited: 2/8/2017
+# Date last edited: 17/8/2017
 # 
 # Code for analysis of the repeatability results. For more details see Lab book Repeatability.docx)
 # 
@@ -25,10 +25,13 @@ library(colorRamps) # colours
 library(ade4) # for distinctiveness
 library(sjPlot) # plotting glms
 library(lme4)
+library(stringr) # for confusion matrix axes
+
+rm(list = ls())
+
 dev.off()
 par.def <- par()
 
-rm(list = ls())
 
 # 1. Load in the data -----------------------------------------------------
 SpeciesData <- read.csv("Data/SpeciesData.csv")
@@ -609,33 +612,35 @@ IDs.long.mod$csLogMeanDia <- (IDs.long.mod$logMeanDia - mean(IDs.long.mod$logMea
 IDs.long.mod$csED <- (IDs.long.mod$ED - mean(IDs.long.mod$ED)) / sd(IDs.long.mod$ED)
 summary(IDs.long.mod)
 
- # checking for correlations
+# checking for correlations
 summary(IDs.long.mod[, c("Corr", "HowLong", "logMeanDia", "Taught", "ED", "Conf", "SpConf", "Experience", "Gender")])
 str(IDs.long.mod[, c("Corr", "HowLong", "logMeanDia", "Taught", "ED", "Conf", "SpConf", "Experience", "Gender")])
 pairs(IDs.long.mod[, c("HowLong", "logMeanDia", "Taught", "ED", "Conf", "SpConf", "Experience", "Gender")])
 
-m1.fix <- glm(Corr ~ logMeanDia*(HowLong + Taught + ED + Conf + SpConf + Experience + Gender + DefinitiveID) + Person + SpecNumber, family = binomial, data = IDs.long.mod) 
+# run a fixed model first with everything, to get an approximate idea
+m1.fix <- glm(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender + DefinitiveID) + Person + SpecNumber, family = binomial, data = IDs.long.mod) # you get convergence warnings on this (I think because they aren't fitted as randoms.)
 par(mfrow = c(2,2))
 plot(m1.fix)
 par(mfrow = c(1,1))
 summary(m1.fix)
 
+# use stepped to see what drops out immediately
 stepped <- step(m1.fix)
 summary(stepped)
 
-sjp.glm(stepped, type = "pred", vars = c("logMeanDia", "DefinitiveID"), geom.colors = matlab.like(30))
+sjp.glm(stepped, type = "pred", vars = c("csLogMeanDia"), geom.colors = matlab.like(30))
 
 # optimal random structure
-glmcon <- glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=3e5))
+glmcon <- glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=3e5)) # stop convergence issues
 m1.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID) + (1|Person) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
 
-sjp.glm(m1.me, type = "pred", vars = c("logMeanDia", "DefinitiveID"), geom.colors = matlab.like(30))
+sjp.glm(m1.me, type = "pred", vars = c("csLogMeanDia", "DefinitiveID"), geom.colors = matlab.like(30))
 
-m2.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (csLogMeanDia|DefinitiveID) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
+m2.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
 
-m3.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (csLogMeanDia|DefinitiveID) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
+m3.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
 
-m4.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (csLogMeanDia|DefinitiveID), family = binomial, data = IDs.long.mod, control = glmcon)
+m4.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID), family = binomial, data = IDs.long.mod, control = glmcon)
 
 m5.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|DefinitiveID) + (1|Person) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
 
@@ -662,8 +667,8 @@ plot(fi.m5.me, re.m5.me)
 
 # run model simplification
 m5a.me <- update(m5.me, .~. -csLogMeanDia:Gender)
-summary(m5a.me)
 anova(m5.me, m5a.me)
+summary(m5a.me)
 m5b.me <- update(m5a.me, .~. -csLogMeanDia:SpConf)
 anova(m5b.me, m5a.me)
 summary(m5b.me)
@@ -681,6 +686,7 @@ anova(m5f.me, m5e.me)
 summary(m5f.me)
 
 # can't simplify further, so move to plotting
+pdf("Figures/GLM_effects.pdf")
 sjp.glmer(m5f.me)
 sjp.glmer(m5f.me, type = "fe")
 sjp.glmer(m5f.me, type = "eff")
@@ -697,11 +703,13 @@ sjp.glmer(m5f.me, type = "pred", vars = "Taught")
 sjp.glmer(m5f.me, type = "pred", vars = "Conf")
 sjp.glmer(m5f.me, type = "pred", vars = "SpConf")
 sjp.glmer(m5f.me, type = "pred", vars = "Experience")
-sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"))
-sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"))
-sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Conf"))
-sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "SpConf"))
-sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Experience"))
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "How Long")
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "Taught")
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Conf"), title = "Specimen Confidence")
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "SpConf"), title = "Species confidence")
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "Experience")
+dev.off()
+
 png("Figures/GLM_size_sp.png", 1500, 1200, res = 120)
 sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "DefinitiveID"), geom.colors = rep("blue4", 26), show.ci = TRUE, cex = 10, cex.axis = 10, cex.labels = 10)
 dev.off()
@@ -711,6 +719,13 @@ for (i in 1:26){
   sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "DefinitiveID"), facet.grid = FALSE, pch = ".", geom.colors = c(rep("grey90",i-1), "black", rep("grey90", 27-i)))
   dev.off()
 }
+
+# same thing but saved into one pdf
+pdf("Figures/GLM_size.pdf", 10,7)
+for (i in 1:26){
+  sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "DefinitiveID"), facet.grid = FALSE, pch = ".", geom.colors = c(rep("grey90",i-1), "black", rep("grey90", 27-i)))
+}
+dev.off()
 
 sjp.int(m5f.me, type = "eff")
 
@@ -735,21 +750,33 @@ axis(2, seq(0,(27*((1+1/43))/44), length.out = length(sp.idd[rowSums(conf.sp$tab
 par(par.def)
 dev.off()
 
+# full confusion matrix with key
 png("Figures/confusion_full_grey_key.png", 1000, 700)
 par(fig = c(0, 0.9, 0, 1))
 par(mar = c(15, 15, 2, 2))
+# confusion matrix
 image(t(conf.sp$table / rowSums(conf.sp$table)), col = c("grey70", matlab.like(1000)), ylim = c((28*((1+1/43))/44) - (1+1/43)/44/2, -(1+1/43)/44/2 ), axes = FALSE)
 
+title(xlab = expression(bold("Individual ID")), ylab = expression(bold("Definitive ID")), line = 13, cex.axis = 1.2)
+
+# x axis names
 xaxis.names <- sp.idd
 axis(1, seq(0,1, length.out = length(xaxis.names))[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], xaxis.names[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], las = 2, font = 3, cex.axis = 1.05)
 axis(1, seq(0,1, length.out = length(xaxis.names))[-grep("^[A-Z]", xaxis.names)], xaxis.names[-grep("^[A-Z]", xaxis.names)], las = 2, cex.axis = 1.05)
 axis(1, seq(0,1, length.out = length(xaxis.names))[str_count(xaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", xaxis.names[str_count(xaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", xaxis.names[str_count(xaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
 
+# number of specimens in Individual ID
+axis(3, seq(0,1, length.out = length(xaxis.names)) - 0.002, table(IDs.long$ID)[match(xaxis.names, names(table(IDs.long$ID)))], cex.axis = 0.8, las = 2, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# y axis names
 yaxis.names <- sp.idd[rowSums(conf.sp$table) > 0]
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)), labels = FALSE)
 axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 1], yaxis.names[str_count(yaxis.names, " ") == 1], las = 1, font = 3, cex.axis = 1.05)
 axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[-grep("^[A-Z]", yaxis.names)], yaxis.names[-grep("^[A-Z]", yaxis.names)], las = 1, cex.axis = 1.05)
 axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", yaxis.names[str_count(yaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", yaxis.names[str_count(yaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
 
+# number of specimens in Definitive ID
+axis(4, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)) - 0.002, (table(IDs.long$DefinitiveID)/23)[match(yaxis.names, names(table(IDs.long$DefinitiveID)))], cex.axis = 0.8, las = 1, tick = FALSE, mgp = c(3, 0.5, 0))
 
 # add key
 par(fig = c(0.9, 1, 0.35, 1), new = TRUE)
@@ -757,34 +784,209 @@ par(mai = c(1, 0.4, 0.8, 0.5))
 names.key <- rep("", 101)
 names.key[seq(1, 101, by = 20)] <- seq(0.0, 1.0, by = 0.2)
 key <- rep(1, 101)
-barplot(key, names.arg = names.key, main = "\nFraction of\nSpecimens", horiz = TRUE, space = 0, border = NA, 
-        col = c("grey70", matlab.like(100)), fg = "white", las = 1, mgp = c(0, 1, 0), xaxt = "n", cex.names = 1, 
-        cex.main = 1.1, font.main = 1)
+barplot(key, main = "\nFraction of\nSpecimens", horiz = TRUE, space = 0, border = NA, col = c("grey70", matlab.like(100)), fg = "white", cex.main = 1.1, font.main = 1, xaxt = "n", yaxt = "n")
+axis(4, at = 1:101, names.key, las = 1, mgp = c(0, 1, 0), xaxt = "n", cex.axis = 1, tick = FALSE)
 par(par.def)
 dev.off() 
 
-
 conf.sp$overall
 
-conf.exp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "y"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "y"], levels = sp.idd))
-image(conf.exp$table / rowSums(conf.exp$table), axes = FALSE, col = matlab.like(100))
-axis(1, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 2)
-axis(2, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 1)
+
+# confusion matrix for experienced workers
+conf.exp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Experienced"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Experienced"], levels = sp.idd))
+conf.exp.frac <- t(conf.exp$table / rowSums(conf.exp$table))
+conf.exp.frac[conf.exp.frac == "NaN"] <- 0 # otherwise white patches appear across the plots
+
+png("Figures/confusion_exp_grey_key.png", 1000, 700)
+par(fig = c(0, 0.9, 0, 1))
+par(mar = c(15, 15, 2, 2))
+# confusion matrix
+image(conf.exp.frac, col = c("grey70", matlab.like(1000)), ylim = c((28*((1+1/43))/44) - (1+1/43)/44/2, -(1+1/43)/44/2 ), axes = FALSE, bg = "grey70")
+
+title(xlab = expression(bold("Individual ID")), ylab = expression(bold("Definitive ID")), line = 13, cex.axis = 1.2)
+
+# x axis names
+xaxis.names <- sp.idd
+axis(1, seq(0,1, length.out = length(xaxis.names))[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], xaxis.names[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], las = 2, font = 3, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[-grep("^[A-Z]", xaxis.names)], xaxis.names[-grep("^[A-Z]", xaxis.names)], las = 2, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[str_count(xaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", xaxis.names[str_count(xaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", xaxis.names[str_count(xaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Individual ID
+axis(3, seq(0,1, length.out = length(xaxis.names)) - 0.002, table(IDs.long$ID[IDs.long$Experienced == "Experienced"])[match(xaxis.names, names(table(IDs.long$ID)))], cex.axis = 0.8, las = 2, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# y axis names
+yaxis.names <- sp.idd[rowSums(conf.sp$table) > 0]
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)), labels = FALSE)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 1], yaxis.names[str_count(yaxis.names, " ") == 1], las = 1, font = 3, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[-grep("^[A-Z]", yaxis.names)], yaxis.names[-grep("^[A-Z]", yaxis.names)], las = 1, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", yaxis.names[str_count(yaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", yaxis.names[str_count(yaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Definitive ID
+axis(4, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)) - 0.002, (table(IDs.long$DefinitiveID[IDs.long$Experienced == "Experienced"])/4)[match(yaxis.names, names(table(IDs.long$DefinitiveID)))], cex.axis = 0.8, las = 1, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# add key
+par(fig = c(0.9, 1, 0.35, 1), new = TRUE)
+par(mai = c(1, 0.4, 0.8, 0.5))
+names.key <- rep("", 101)
+names.key[seq(1, 101, by = 20)] <- seq(0.0, 1.0, by = 0.2)
+key <- rep(1, 101)
+barplot(key, main = "\nFraction of\nSpecimens", horiz = TRUE, space = 0, border = NA, col = c("grey70", matlab.like(100)), fg = "white", cex.main = 1.1, font.main = 1, xaxt = "n", yaxt = "n")
+axis(4, at = 1:101, names.key, las = 1, mgp = c(0, 1, 0), xaxt = "n", cex.axis = 1, tick = FALSE)
+par(par.def)
+dev.off() 
+
 conf.exp$overall
 
 
+# confusion matrix for students
+conf.stu <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Student"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Student"], levels = sp.idd))
+conf.stu.frac <- t(conf.stu$table / rowSums(conf.stu$table))
+conf.stu.frac[conf.stu.frac == "NaN"] <- 0 # otherwise white patches appear across the plots
+
+png("Figures/confusion_stu_grey_key.png", 1000, 700)
+par(fig = c(0, 0.9, 0, 1))
+par(mar = c(15, 15, 2, 2))
+# confusion matrix
+image(conf.stu.frac, col = c("grey70", matlab.like(1000)), ylim = c((28*((1+1/43))/44) - (1+1/43)/44/2, -(1+1/43)/44/2 ), axes = FALSE, bg = "grey70")
+
+title(xlab = expression(bold("Individual ID")), ylab = expression(bold("Definitive ID")), line = 13, cex.axis = 1.2)
+
+# x axis names
+xaxis.names <- sp.idd
+axis(1, seq(0,1, length.out = length(xaxis.names))[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], xaxis.names[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], las = 2, font = 3, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[-grep("^[A-Z]", xaxis.names)], xaxis.names[-grep("^[A-Z]", xaxis.names)], las = 2, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[str_count(xaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", xaxis.names[str_count(xaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", xaxis.names[str_count(xaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Individual ID
+axis(3, seq(0,1, length.out = length(xaxis.names)) - 0.002, table(IDs.long$ID[IDs.long$Experienced == "Student"])[match(xaxis.names, names(table(IDs.long$ID)))], cex.axis = 0.8, las = 2, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# y axis names
+yaxis.names <- sp.idd[rowSums(conf.sp$table) > 0]
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)), labels = FALSE)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 1], yaxis.names[str_count(yaxis.names, " ") == 1], las = 1, font = 3, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[-grep("^[A-Z]", yaxis.names)], yaxis.names[-grep("^[A-Z]", yaxis.names)], las = 1, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", yaxis.names[str_count(yaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", yaxis.names[str_count(yaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Definitive ID
+axis(4, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)) - 0.002, (table(IDs.long$DefinitiveID[IDs.long$Experienced == "Student"])/19)[match(yaxis.names, names(table(IDs.long$DefinitiveID)))], cex.axis = 0.8, las = 1, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# add key
+par(fig = c(0.9, 1, 0.35, 1), new = TRUE)
+par(mai = c(1, 0.4, 0.8, 0.5))
+names.key <- rep("", 101)
+names.key[seq(1, 101, by = 20)] <- seq(0.0, 1.0, by = 0.2)
+key <- rep(1, 101)
+barplot(key, main = "\nFraction of\nSpecimens", horiz = TRUE, space = 0, border = NA, col = c("grey70", matlab.like(100)), fg = "white", cex.main = 1.1, font.main = 1, xaxt = "n", yaxt = "n")
+axis(4, at = 1:101, names.key, las = 1, mgp = c(0, 1, 0), xaxt = "n", cex.axis = 1, tick = FALSE)
+par(par.def)
+dev.off()
+  
+  
+# confusion matrix for confident IDs
 conf.conf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "y"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "y"], levels = sp.idd))
-image(conf.conf$table / rowSums(conf.conf$table), axes = FALSE, col = matlab.like(100))
-axis(1, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 2)
-axis(2, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 1)
+conf.conf.frac <- t(conf.conf$table / rowSums(conf.conf$table))
+conf.conf.frac[conf.conf.frac == "NaN"] <- 0 # otherwise white patches appear across the plots
+
+png("Figures/confusion_conf_grey_key.png", 1000, 700)
+par(fig = c(0, 0.9, 0, 1))
+par(mar = c(15, 15, 2, 2))
+# confusion matrix
+image(conf.conf.frac, col = c("grey70", matlab.like(1000)), ylim = c((28*((1+1/43))/44) - (1+1/43)/44/2, -(1+1/43)/44/2 ), axes = FALSE, bg = "grey70")
+
+title(xlab = expression(bold("Individual ID")), ylab = expression(bold("Definitive ID")), line = 13, cex.axis = 1.2)
+
+# x axis names
+xaxis.names <- sp.idd
+axis(1, seq(0,1, length.out = length(xaxis.names))[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], xaxis.names[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], las = 2, font = 3, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[-grep("^[A-Z]", xaxis.names)], xaxis.names[-grep("^[A-Z]", xaxis.names)], las = 2, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[str_count(xaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", xaxis.names[str_count(xaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", xaxis.names[str_count(xaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Individual ID
+axis(3, seq(0,1, length.out = length(xaxis.names)) - 0.002, table(IDs.long$ID[IDs.long$Conf == "y"])[match(xaxis.names, names(table(IDs.long$ID)))], cex.axis = 0.8, las = 2, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# y axis names
+yaxis.names <- sp.idd[rowSums(conf.sp$table) > 0]
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)), labels = FALSE)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 1], yaxis.names[str_count(yaxis.names, " ") == 1], las = 1, font = 3, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[-grep("^[A-Z]", yaxis.names)], yaxis.names[-grep("^[A-Z]", yaxis.names)], las = 1, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", yaxis.names[str_count(yaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", yaxis.names[str_count(yaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Definitive ID
+axis(4, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)) - 0.002, (table(IDs.long$DefinitiveID)/23)[match(yaxis.names, names(table(IDs.long$DefinitiveID)))], cex.axis = 0.8, las = 1, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# add key
+par(fig = c(0.9, 1, 0.35, 1), new = TRUE)
+par(mai = c(1, 0.4, 0.8, 0.5))
+names.key <- rep("", 101)
+names.key[seq(1, 101, by = 20)] <- seq(0.0, 1.0, by = 0.2)
+key <- rep(1, 101)
+barplot(key, main = "\nFraction of\nSpecimens", horiz = TRUE, space = 0, border = NA, col = c("grey70", matlab.like(100)), fg = "white", cex.main = 1.1, font.main = 1, xaxt = "n", yaxt = "n")
+axis(4, at = 1:101, names.key, las = 1, mgp = c(0, 1, 0), xaxt = "n", cex.axis = 1, tick = FALSE)
+par(par.def)
+dev.off() 
+
 conf.conf$overall
- 
+
+
 conf.unconf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "n"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "n"], levels = sp.idd))
 image(conf.unconf$table / rowSums(conf.unconf$table), axes = FALSE, col = matlab.like(100))
 axis(1, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 2)
 axis(2, seq(0,1, length.out = length(sp.idd)), sp.idd, las = 1)
 conf.unconf$overall
 
+# confusion matrix for unconfident IDs
+conf.unconf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "n"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "n"], levels = sp.idd))
+conf.unconf.frac <- t(conf.unconf$table / rowSums(conf.unconf$table))
+conf.unconf.frac[conf.unconf.frac == "NaN"] <- 0 # otherwise white patches appear across the plots
+
+png("Figures/confusion_unconf_grey_key.png", 1000, 700)
+par(fig = c(0, 0.9, 0, 1))
+par(mar = c(15, 15, 2, 2))
+# confusion matrix
+image(conf.unconf.frac, col = c("grey70", matlab.like(1000)), ylim = c((28*((1+1/43))/44) - (1+1/43)/44/2, -(1+1/43)/44/2 ), axes = FALSE, bg = "grey70")
+
+title(xlab = expression(bold("Individual ID")), ylab = expression(bold("Definitive ID")), line = 13, cex.axis = 1.2)
+
+# x axis names
+xaxis.names <- sp.idd
+axis(1, seq(0,1, length.out = length(xaxis.names))[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], xaxis.names[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], las = 2, font = 3, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[-grep("^[A-Z]", xaxis.names)], xaxis.names[-grep("^[A-Z]", xaxis.names)], las = 2, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[str_count(xaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", xaxis.names[str_count(xaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", xaxis.names[str_count(xaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Individual ID
+axis(3, seq(0,1, length.out = length(xaxis.names)) - 0.002, table(IDs.long$ID[IDs.long$Conf == "n"])[match(xaxis.names, names(table(IDs.long$ID)))], cex.axis = 0.8, las = 2, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# y axis names
+yaxis.names <- sp.idd[rowSums(conf.sp$table) > 0]
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)), labels = FALSE)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 1], yaxis.names[str_count(yaxis.names, " ") == 1], las = 1, font = 3, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[-grep("^[A-Z]", yaxis.names)], yaxis.names[-grep("^[A-Z]", yaxis.names)], las = 1, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", yaxis.names[str_count(yaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", yaxis.names[str_count(yaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Definitive ID
+axis(4, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)) - 0.002, (table(IDs.long$DefinitiveID)/23)[match(yaxis.names, names(table(IDs.long$DefinitiveID)))], cex.axis = 0.8, las = 1, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# add key
+par(fig = c(0.9, 1, 0.35, 1), new = TRUE)
+par(mai = c(1, 0.4, 0.8, 0.5))
+names.key <- rep("", 101)
+names.key[seq(1, 101, by = 20)] <- seq(0.0, 1.0, by = 0.2)
+key <- rep(1, 101)
+barplot(key, main = "\nFraction of\nSpecimens", horiz = TRUE, space = 0, border = NA, col = c("grey70", matlab.like(100)), fg = "white", cex.main = 1.1, font.main = 1, xaxt = "n", yaxt = "n")
+axis(4, at = 1:101, names.key, las = 1, mgp = c(0, 1, 0), xaxt = "n", cex.axis = 1, tick = FALSE)
+par(par.def)
+dev.off() 
+
+# confusion matrix values
+conf.sp$overall
+conf.exp$overall
+conf.stu$overall
+conf.conf$overall
+conf.unconf$overall
+
+# Accuracy is the fraction of correct identifications
+# Accuracy null is (I think) the expected accuracy - which is the accuracy that would be expected based on random.
+# the kappa statistic is (observed - expected) / (1 - expected)
 
 # 9. Producing summaries for people ---------------------------------------
 write.csv(completeIDs[, c("SpecNumber", "DefinitiveID", "ChealesID", "ChealesC", "fracCorr")], file = "Outputs/Repeatability_Cheales.csv", row.names = FALSE)
