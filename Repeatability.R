@@ -2,7 +2,7 @@
 # Project: Repeatability
 # Author: Isabel Fenton
 # Date created: 9/3/2017
-# Date last edited: 17/8/2017
+# Date last edited: 30/8/2017
 # 
 # Code for analysis of the repeatability results. For more details see Lab book Repeatability.docx)
 # 
@@ -26,8 +26,13 @@ library(ade4) # for distinctiveness
 library(sjPlot) # plotting glms
 library(lme4)
 library(stringr) # for confusion matrix axes
+library(broom) # alternative plotting
+library(ggplot2) # alternative plotting
 
 rm(list = ls())
+
+source("../../../../../Dropbox/Documents/AdrianaDePalma/plotLmerMeans.R")
+source("Code/plotLmerMeansRepeat.R")
 
 dev.off()
 par.def <- par()
@@ -513,6 +518,20 @@ median(people.df$fracCorr400[!is.na(people.df$Experienced)], na.rm = TRUE)
 median(people.df$fracCorr400[people.df$Experienced == "Experienced"], na.rm = TRUE)
 median(people.df$fracCorr400[people.df$Experienced == "Student"], na.rm = TRUE)
 
+# 3c. Plotting confidence -------------------------------------------------
+plot(c(1,3), c(0, 1), type = "n", xaxt = "n", xlab = "", ylab = "", las = 2, xlim = c(0.5, 3.5), main = "Specimen confidence")
+axis(1, 1:3, labels = c("no", "maybe", "yes"))
+for (i in 3:nrow(people.df)) {
+  tmp.y <- people.df[i, c("fracCorrNwoUID", "fracCorrM", "fracCorrY")]
+  points((1:3)[!is.na(tmp.y)], tmp.y[!is.na(tmp.y)], type = "b", col = rep(1:5, 10)[i])
+}
+
+plot(c(1,3), c(0, 1), type = "n", xaxt = "n", xlab = "", ylab = "", las = 2, xlim = c(0.5, 3.5), main = "Species confidence")
+axis(1, 1:3, labels = c("no", "maybe", "yes"))
+for (i in 1:nrow(people.df)) {
+  tmp.y <- people.df[i, c("fracCorrSN", "fracCorrSM", "fracCorrSY")]
+  points((1:3)[!is.na(tmp.y)], tmp.y[!is.na(tmp.y)], type = "b", col = rep(1:5, 10)[i])
+}
 
 
 # 4. Percentage accuracy per specimen ------------------------------------
@@ -549,7 +568,7 @@ tail(IDs.long)
 # correct ID?
 IDs.long$Corr <- as.numeric(IDs.long$DefinitiveID == IDs.long$ID)
 
-# 6b. adding in the specimen level size data ----------------------------------
+# 6b. Adding in the specimen level size data ----------------------------------
 head(sp.size)
 sp.size$logMeanDia <- log(sp.size$MeanDia)
 size.col <- c("SpecNum", "MeanDia", "logMeanDia")
@@ -567,7 +586,7 @@ plot(IDs.long$Corr~ IDs.long$logMeanDia)
 lines(log(seq(180, 1050, length.out = 100)), tmp2)
 rm(tmp, tmp2)
 
-# 6c. adding in the species level data -------------------------------
+# 6c. Adding in the species level data -------------------------------
 head(SpeciesData)
 IDs.long <- merge(IDs.long, SpeciesData[, 2:ncol(SpeciesData)], by.x = "DefinitiveID", by.y = "Species")
 head(IDs.long)
@@ -594,6 +613,8 @@ IDs.long$SpConf <- factor(IDs.long$SpConf)
 
 
 # 7. Modelling ------------------------------------------------------------
+
+# 7a. Create a dataframe for modelling ------------------------------------
 # remove the genus level identifications from the analysis dataframe
 IDs.long.mod <- IDs.long[-grep("g", IDs.long$Conf),c("Corr", "HowLong", "logMeanDia", "Taught", "ED", "Conf", "SpConf", "Experience", "Gender", "DefinitiveID", "Person", "SpecNumber")]
 
@@ -617,6 +638,8 @@ summary(IDs.long.mod[, c("Corr", "HowLong", "logMeanDia", "Taught", "ED", "Conf"
 str(IDs.long.mod[, c("Corr", "HowLong", "logMeanDia", "Taught", "ED", "Conf", "SpConf", "Experience", "Gender")])
 pairs(IDs.long.mod[, c("HowLong", "logMeanDia", "Taught", "ED", "Conf", "SpConf", "Experience", "Gender")])
 
+
+# 7b. Fixed model ---------------------------------------------------------
 # run a fixed model first with everything, to get an approximate idea
 m1.fix <- glm(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender + DefinitiveID) + Person + SpecNumber, family = binomial, data = IDs.long.mod) # you get convergence warnings on this (I think because they aren't fitted as randoms.)
 par(mfrow = c(2,2))
@@ -630,6 +653,8 @@ summary(stepped)
 
 sjp.glm(stepped, type = "pred", vars = c("csLogMeanDia"), geom.colors = matlab.like(30))
 
+
+# 7c. Optimal model -------------------------------------------------------
 # optimal random structure
 glmcon <- glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=3e5)) # stop convergence issues
 m1.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID) + (1|Person) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
@@ -685,6 +710,11 @@ m5f.me <- update(m5e.me, .~. -Gender)
 anova(m5f.me, m5e.me)
 summary(m5f.me)
 
+anova(m5f.me)
+
+write.csv(anova(m5f.me), file = "Outputs/anova_m5f_me.csv")
+
+# 7d. Model plotting ------------------------------------------------------
 # can't simplify further, so move to plotting
 pdf("Figures/GLM_effects.pdf")
 sjp.glmer(m5f.me)
@@ -727,9 +757,120 @@ for (i in 1:26){
 }
 dev.off()
 
-sjp.int(m5f.me, type = "eff")
+# how do the sjp.glmer plots work?
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Conf"), title = "Conf", show.ci = TRUE, facet.grid = FALSE)
 
-# 8. Create a confusion matrix --------------------------------------------
+aug <- augment(m5f.me, IDs.long.mod)
+aug$fit.rs <- 1/(1 + exp(-aug$.fitted)) # back transformation(inv.logit)
+aug$fix.rs <- 1/(1 + exp(-aug$.fixed))
+
+inv.logit <- function(x) 1/(1 + exp(x))
+
+# generates a linear model of the fitted data, so not a good match to the sjp plots
+p4 <- ggplot(aug, aes(csLogMeanDia, fit.rs, color=Conf, fill=Conf)) + geom_smooth(method = lm) + ylab("Corr") 
+plot(p4)
+
+# how the sjp.glmer function does it:
+tmp <- merTools::predictInterval(m5f.me, newdata = IDs.long.mod, which = "full", type = "probability", level = 0.95) # n.b. this is an approximation, so answers will be subtly different each time
+
+aug$pi.fit <- tmp$fit
+aug$pi.upr <- tmp$upr
+aug$pi.lwr <- tmp$lwr
+
+mp <- ggplot(aug, aes(x = csLogMeanDia, y = pi.fit, colour = Conf, fill = Conf)) + stat_smooth(method = "glm", method.args = list(family = m5f.me@resp$family), se = TRUE, fullrange = TRUE, level = 0.95, alpha = 0.3) + coord_cartesian(ylim = c(0,1)) 
+plot(mp)
+
+# so generating the plots for the paper
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Conf"), title = "Conf", show.ci = TRUE, facet.grid = FALSE)
+
+plotLmerMeans(m5f.me, var.of.interest = "Conf", var.interaction = "csLogMeanDia")
+tmp <- plotLmerMeans(m5f.me, var.of.interest = "Conf", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = 1:3, return_quietly = FALSE)
+
+png("Figures/Size_Conf_sjp_glmer.png")
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Conf"), title = "Conf", show.ci = TRUE, facet.grid = FALSE)
+dev.off()
+
+png("Figures/Size_Conf_plotLmerMeans.png")
+plotLmerMeans(m5f.me, var.of.interest = "Conf", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = 1:3)
+legend("topright", legend = levels(IDs.long.mod$Conf), col = 1:3, lty = 1, lwd = 3)
+dev.off()
+
+png("Figures/Size_Conf_plotLmerMeansRepeat.png")
+plotLmerMeansRepeat(m5f.me, var.of.interest = "Conf", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = 1:3, mainlabel = "Confidence")
+legend("topright", legend = levels(IDs.long.mod$Conf), col = 1:3, lty = 1, lwd = 3)
+dev.off()
+
+png("Figures/Size_Taught_plotLmerMeansRepeat.png")
+plotLmerMeansRepeat(m5f.me, var.of.interest = "Taught", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = 1:3, mainlabel = "Taught")
+legend("topright", legend = levels(IDs.long.mod$Conf), col = 1:3, lty = 1, lwd = 3)
+dev.off()
+
+# using Adriana's code (but edited to highest level as baseline)
+pdf("Figures/Terms_plotLmerMeansRepeat.pdf")
+plotLmerMeansRepeat(m5f.me, var.of.interest = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), mainlabel = "Log Mean Diameter")
+
+plotLmerMeansRepeat(m5f.me, var.of.interest = "Conf", transform_fun = inv.logit, ylims = c(0,1), mainlabel = "Specimen Confidence")
+
+plotLmerMeansRepeat(m5f.me, var.of.interest = "SpConf", transform_fun = inv.logit, ylims = c(0,1), mainlabel = "Species Confidence")
+
+plotLmerMeansRepeat(m5f.me, var.of.interest = "Experience", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = c("red3", "blue2", "green4"), mainlabel= "Experience", xlabel = "Log Mean Diameter")
+legend("bottomright", legend = levels(IDs.long.mod$Experience), col = c("red3", "blue2", "green4"), lty = 1, lwd = 3)
+
+plotLmerMeansRepeat(m5f.me, var.of.interest = "HowLong", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = c("red3", "blue2", "green4", "purple"), mainlabel= "How Long", xlabel = "Log Mean Diameter")
+legend("bottomright", legend = levels(IDs.long.mod$HowLong), col = c("red3", "blue2", "green4", "purple"), lty = 1, lwd = 3)
+
+plotLmerMeansRepeat(m5f.me, var.of.interest = "Taught", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = c("red3", "blue2", "green4"), mainlabel= "Taught", xlabel = "Log Mean Diameter")
+legend("topright", legend = levels(IDs.long.mod$Conf), col = c("red3", "blue2", "green4"), lty = 1, lwd = 3)
+dev.off()
+
+
+# sjp.glmer code
+pdf("Figures/Terms_SJP_Glmer.pdf")
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia"), title = "Log Mean Diameter", show.ci = TRUE, facet.grid = FALSE)
+
+sjp.glmer(m5f.me, type = "pred", vars = c("Conf"), title = "Specimen Confidence", show.ci = TRUE, facet.grid = FALSE)
+
+sjp.glmer(m5f.me, type = "pred", vars = c("SpConf"), title = "Species Confidence", show.ci = TRUE, facet.grid = FALSE)
+
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "Experience", show.ci = TRUE, facet.grid = FALSE)
+
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "How Long", show.ci = TRUE, facet.grid = FALSE)
+
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "Taught", show.ci = TRUE, facet.grid = FALSE)
+dev.off()
+
+# 8. Try running a model with unordered factors ----------------------------------------------
+# unordered factors
+IDs.long.mod2 <- IDs.long.mod
+IDs.long.mod2$HowLong <- factor(unclass(IDs.long.mod2$HowLong))
+IDs.long.mod2$Taught <- factor(unclass(IDs.long.mod2$Taught))
+IDs.long.mod2$Conf <- factor(unclass(IDs.long.mod2$Conf))
+IDs.long.mod2$SpConf <- factor(unclass(IDs.long.mod2$SpConf))
+IDs.long.mod2$Experience <- factor(unclass(IDs.long.mod2$Experience))
+
+m5f.me2 <- update(m5f.me, data = IDs.long.mod2)
+summary(m5f.me2)
+
+# with the new unordered model
+pdf("Figures/Terms_plotLmerMeansRepeat2.pdf")
+plotLmerMeansRepeat(m5f.me2, var.of.interest = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), mainlabel = "Log Mean Diameter")
+
+plotLmerMeansRepeat(m5f.me2, var.of.interest = "Conf", transform_fun = inv.logit, ylims = c(0,1), mainlabel = "Specimen Confidence")
+
+plotLmerMeansRepeat(m5f.me2, var.of.interest = "SpConf", transform_fun = inv.logit, ylims = c(0,1), mainlabel = "Species Confidence")
+
+plotLmerMeansRepeat(m5f.me2, var.of.interest = "Experience", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = c("red3", "blue2", "green4"), mainlabel= "Experience", xlabel = "Log Mean Diameter")
+legend("bottomright", legend = levels(IDs.long.mod$Experience), col = c("red3", "blue2", "green4"), lty = 1, lwd = 3)
+
+plotLmerMeansRepeat(m5f.me2, var.of.interest = "HowLong", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = c("red3", "blue2", "green4", "purple"), mainlabel= "How Long", xlabel = "Log Mean Diameter")
+legend("bottomright", legend = levels(IDs.long.mod$HowLong), col = c("red3", "blue2", "green4", "purple"), lty = 1, lwd = 3)
+
+plotLmerMeansRepeat(m5f.me2, var.of.interest = "Taught", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = c("red3", "blue2", "green4"), mainlabel= "Taught", xlabel = "Log Mean Diameter")
+legend("topright", legend = levels(IDs.long.mod$Conf), col = c("red3", "blue2", "green4"), lty = 1, lwd = 3)
+dev.off()
+
+
+# 9. Create a confusion matrix --------------------------------------------
 # full confusion matrix
 sp.idd <- read.csv("Data/Specieslist.csv")$DefinitiveID
 conf.sp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$ID != "lost"], levels = sp.idd), factor(IDs.long$ID[IDs.long$ID != "lost"], levels = sp.idd))
@@ -988,7 +1129,98 @@ conf.unconf$overall
 # Accuracy null is (I think) the expected accuracy - which is the accuracy that would be expected based on random.
 # the kappa statistic is (observed - expected) / (1 - expected)
 
-# 9. Producing summaries for people ---------------------------------------
+
+
+# confusion matrix for large specimens 
+conf.large <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$MeanDia >= 200], levels = sp.idd), factor(IDs.long$ID[IDs.long$MeanDia >= 200], levels = sp.idd))
+conf.large.frac <- t(conf.large$table / rowSums(conf.large$table))
+conf.large.frac[conf.large.frac == "NaN"] <- 0 # otherwise white patches appear across the plots
+
+png("Figures/confusion_large_grey_key.png", 1000, 700)
+par(fig = c(0, 0.9, 0, 1))
+par(mar = c(15, 15, 2, 2))
+# confusion matrix
+image(conf.large.frac, col = c("grey70", matlab.like(1000)), ylim = c((28*((1+1/43))/44) - (1+1/43)/44/2, -(1+1/43)/44/2 ), axes = FALSE, bg = "grey70")
+
+title(xlab = expression(bold("Individual ID")), ylab = expression(bold("Definitive ID")), line = 13, cex.axis = 1.2)
+
+# x axis names
+xaxis.names <- sp.idd
+axis(1, seq(0,1, length.out = length(xaxis.names))[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], xaxis.names[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], las = 2, font = 3, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[-grep("^[A-Z]", xaxis.names)], xaxis.names[-grep("^[A-Z]", xaxis.names)], las = 2, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[str_count(xaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", xaxis.names[str_count(xaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", xaxis.names[str_count(xaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Individual ID
+axis(3, seq(0,1, length.out = length(xaxis.names)) - 0.002, table(IDs.long$ID[IDs.long$MeanDia >= 200])[match(xaxis.names, names(table(IDs.long$ID)))], cex.axis = 0.8, las = 2, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# y axis names
+yaxis.names <- sp.idd[rowSums(conf.sp$table) > 0]
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)), labels = FALSE)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 1], yaxis.names[str_count(yaxis.names, " ") == 1], las = 1, font = 3, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[-grep("^[A-Z]", yaxis.names)], yaxis.names[-grep("^[A-Z]", yaxis.names)], las = 1, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", yaxis.names[str_count(yaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", yaxis.names[str_count(yaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Definitive ID
+axis(4, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)) - 0.002, ifelse(is.na(tapply(sp.size$SpecNum[sp.size$MeanDia >= 200], completeIDs$DefinitiveID[sp.size$MeanDia >= 200], length)[match(yaxis.names, names(table(IDs.long$DefinitiveID)))]), 0, tapply(sp.size$SpecNum[sp.size$MeanDia >= 200], completeIDs$DefinitiveID[sp.size$MeanDia >= 200], length)[match(yaxis.names, names(table(IDs.long$DefinitiveID)))]), cex.axis = 0.8, las = 1, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# add key
+par(fig = c(0.9, 1, 0.35, 1), new = TRUE)
+par(mai = c(1, 0.4, 0.8, 0.5))
+names.key <- rep("", 101)
+names.key[seq(1, 101, by = 20)] <- seq(0.0, 1.0, by = 0.2)
+key <- rep(1, 101)
+barplot(key, main = "\nFraction of\nSpecimens", horiz = TRUE, space = 0, border = NA, col = c("grey70", matlab.like(100)), fg = "white", cex.main = 1.1, font.main = 1, xaxt = "n", yaxt = "n")
+axis(4, at = 1:101, names.key, las = 1, mgp = c(0, 1, 0), xaxt = "n", cex.axis = 1, tick = FALSE)
+par(par.def)
+dev.off() 
+
+conf.large$overall
+
+# confusion matrix for small specimens 
+conf.small <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$MeanDia < 200], levels = sp.idd), factor(IDs.long$ID[IDs.long$MeanDia < 200], levels = sp.idd))
+conf.small.frac <- t(conf.small$table / rowSums(conf.small$table))
+conf.small.frac[conf.small.frac == "NaN"] <- 0 # otherwise white patches appear across the plots
+
+png("Figures/confusion_small_grey_key.png", 1000, 700)
+par(fig = c(0, 0.9, 0, 1))
+par(mar = c(15, 15, 2, 2))
+# confusion matrix
+image(conf.small.frac, col = c("grey70", matlab.like(1000)), ylim = c((28*((1+1/43))/44) - (1+1/43)/44/2, -(1+1/43)/44/2 ), axes = FALSE, bg = "grey70")
+
+title(xlab = expression(bold("Individual ID")), ylab = expression(bold("Definitive ID")), line = 13, cex.axis = 1.2)
+
+# x axis names
+xaxis.names <- sp.idd
+axis(1, seq(0,1, length.out = length(xaxis.names))[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], xaxis.names[intersect(which(str_count(xaxis.names, " ") != 2),grep("^[A-Z]", xaxis.names))], las = 2, font = 3, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[-grep("^[A-Z]", xaxis.names)], xaxis.names[-grep("^[A-Z]", xaxis.names)], las = 2, cex.axis = 1.05)
+axis(1, seq(0,1, length.out = length(xaxis.names))[str_count(xaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", xaxis.names[str_count(xaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", xaxis.names[str_count(xaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Individual ID
+axis(3, seq(0,1, length.out = length(xaxis.names)) - 0.002, table(IDs.long$ID[IDs.long$MeanDia < 200])[match(xaxis.names, names(table(IDs.long$ID)))], cex.axis = 0.8, las = 2, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# y axis names
+yaxis.names <- sp.idd[rowSums(conf.sp$table) > 0]
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)), labels = FALSE)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 1], yaxis.names[str_count(yaxis.names, " ") == 1], las = 1, font = 3, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[-grep("^[A-Z]", yaxis.names)], yaxis.names[-grep("^[A-Z]", yaxis.names)], las = 1, cex.axis = 1.05)
+axis(2, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names))[str_count(yaxis.names, " ") == 2], labels = parse(text = paste(paste("italic('", gsub("^([^ ]* [^ ]*) (.*$)", "\\1", yaxis.names[str_count(yaxis.names, " ") == 2]), "')", sep = ""), gsub("^([^ ]* [^ ]*) (.*$)", "\\2", yaxis.names[str_count(yaxis.names, " ") == 2]), sep = "~")), las = 2, cex.axis = 1.05)
+
+# number of specimens in Definitive ID
+axis(4, seq(0,(27*((1+1/43))/44), length.out = length(yaxis.names)) - 0.002, ifelse(is.na(tapply(sp.size$SpecNum[sp.size$MeanDia < 200], completeIDs$DefinitiveID[sp.size$MeanDia < 200], length)[match(yaxis.names, names(table(IDs.long$DefinitiveID)))]), 0, tapply(sp.size$SpecNum[sp.size$MeanDia < 200], completeIDs$DefinitiveID[sp.size$MeanDia < 200], length)[match(yaxis.names, names(table(IDs.long$DefinitiveID)))]), cex.axis = 0.8, las = 1, tick = FALSE, mgp = c(3, 0.5, 0))
+
+# add key
+par(fig = c(0.9, 1, 0.35, 1), new = TRUE)
+par(mai = c(1, 0.4, 0.8, 0.5))
+names.key <- rep("", 101)
+names.key[seq(1, 101, by = 20)] <- seq(0.0, 1.0, by = 0.2)
+key <- rep(1, 101)
+barplot(key, main = "\nFraction of\nSpecimens", horiz = TRUE, space = 0, border = NA, col = c("grey70", matlab.like(100)), fg = "white", cex.main = 1.1, font.main = 1, xaxt = "n", yaxt = "n")
+axis(4, at = 1:101, names.key, las = 1, mgp = c(0, 1, 0), xaxt = "n", cex.axis = 1, tick = FALSE)
+par(par.def)
+dev.off() 
+
+
+# 10. Producing summaries for people ---------------------------------------
 write.csv(completeIDs[, c("SpecNumber", "DefinitiveID", "ChealesID", "ChealesC", "fracCorr")], file = "Outputs/Repeatability_Cheales.csv", row.names = FALSE)
 
 
