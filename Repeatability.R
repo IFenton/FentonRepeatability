@@ -28,6 +28,8 @@ library(lme4)
 library(stringr) # for confusion matrix axes
 library(broom) # alternative plotting
 library(ggplot2) # alternative plotting
+library(car) # p-values in the anova
+library(MuMIn) # r2 values for the model
 
 rm(list = ls())
 
@@ -711,8 +713,10 @@ anova(m5f.me, m5e.me)
 summary(m5f.me)
 
 anova(m5f.me)
+Anova(m5f.me)
+r.squaredGLMM(m5f.me)
 
-write.csv(anova(m5f.me), file = "Outputs/anova_m5f_me.csv")
+write.csv(Anova(m5f.me), file = "Outputs/anova_m5f_me.csv")
 
 # 7d. Model plotting ------------------------------------------------------
 # can't simplify further, so move to plotting
@@ -780,7 +784,7 @@ aug$pi.lwr <- tmp$lwr
 mp <- ggplot(aug, aes(x = csLogMeanDia, y = pi.fit, colour = Conf, fill = Conf)) + stat_smooth(method = "glm", method.args = list(family = m5f.me@resp$family), se = TRUE, fullrange = TRUE, level = 0.95, alpha = 0.3) + coord_cartesian(ylim = c(0,1)) 
 plot(mp)
 
-# so generating the plots for the paper
+# so considering the plots for the paper
 sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Conf"), title = "Conf", show.ci = TRUE, facet.grid = FALSE)
 
 plotLmerMeans(m5f.me, var.of.interest = "Conf", var.interaction = "csLogMeanDia")
@@ -839,35 +843,39 @@ sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "H
 sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "Taught", show.ci = TRUE, facet.grid = FALSE)
 dev.off()
 
+# paper plots, we decided to just use sjp.glmer
+png("Figures/Size_Taught_sjp_glmer.png")
+sjp.setTheme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2)
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c("Log Mean Diameter", "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5)
+dev.off()
+
+png("Figures/Size_Exp_sjp_glmer.png")
+sjp.setTheme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white", legend.size = 1.2, legend.item.backcol = "white")
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c("Log Mean Diameter", "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5)
+dev.off()
+
+png("Figures/Size_HowLong_sjp_glmer.png")
+sjp.setTheme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white", legend.size = 1.2, legend.item.backcol = "white")
+sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c("Log Mean Diameter", "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5)
+dev.off()
+
 # 8. Try running a model with unordered factors ----------------------------------------------
-# unordered factors
+# unordered factors (sorted to make the base level the best value)
 IDs.long.mod2 <- IDs.long.mod
-IDs.long.mod2$HowLong <- factor(unclass(IDs.long.mod2$HowLong))
-IDs.long.mod2$Taught <- factor(unclass(IDs.long.mod2$Taught))
-IDs.long.mod2$Conf <- factor(unclass(IDs.long.mod2$Conf))
-IDs.long.mod2$SpConf <- factor(unclass(IDs.long.mod2$SpConf))
-IDs.long.mod2$Experience <- factor(unclass(IDs.long.mod2$Experience))
+IDs.long.mod2$HowLong <- factor(as.character(IDs.long.mod2$HowLong), levels = c("3", "2", "1", "0"))
+IDs.long.mod2$Taught <- factor(as.character(IDs.long.mod2$Taught), levels = c("y", "m", "n"))
+IDs.long.mod2$Conf <- factor(as.character(IDs.long.mod2$Conf), levels = c("y", "m", "n"))
+IDs.long.mod2$SpConf <- factor(as.character(IDs.long.mod2$SpConf), levels = c("y", "m", "n"))
+IDs.long.mod2$Experience <- factor(as.character(IDs.long.mod2$Experience), levels = c("2", "1", "0"))
+summary(IDs.long.mod2)
 
 m5f.me2 <- update(m5f.me, data = IDs.long.mod2)
 summary(m5f.me2)
 
-# with the new unordered model
-pdf("Figures/Terms_plotLmerMeansRepeat2.pdf")
-plotLmerMeansRepeat(m5f.me2, var.of.interest = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), mainlabel = "Log Mean Diameter")
+inv.logit(summary(m5f.me2)$coefficients[1, 1])
+inv.logit(summary(m5f.me2)$coefficients[1, 1] + summary(m5f.me2)$coefficients[3:13, 1])
 
-plotLmerMeansRepeat(m5f.me2, var.of.interest = "Conf", transform_fun = inv.logit, ylims = c(0,1), mainlabel = "Specimen Confidence")
-
-plotLmerMeansRepeat(m5f.me2, var.of.interest = "SpConf", transform_fun = inv.logit, ylims = c(0,1), mainlabel = "Species Confidence")
-
-plotLmerMeansRepeat(m5f.me2, var.of.interest = "Experience", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = c("red3", "blue2", "green4"), mainlabel= "Experience", xlabel = "Log Mean Diameter")
-legend("bottomright", legend = levels(IDs.long.mod$Experience), col = c("red3", "blue2", "green4"), lty = 1, lwd = 3)
-
-plotLmerMeansRepeat(m5f.me2, var.of.interest = "HowLong", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = c("red3", "blue2", "green4", "purple"), mainlabel= "How Long", xlabel = "Log Mean Diameter")
-legend("bottomright", legend = levels(IDs.long.mod$HowLong), col = c("red3", "blue2", "green4", "purple"), lty = 1, lwd = 3)
-
-plotLmerMeansRepeat(m5f.me2, var.of.interest = "Taught", var.interaction = "csLogMeanDia", transform_fun = inv.logit, ylims = c(0,1), meancol = c("red3", "blue2", "green4"), mainlabel= "Taught", xlabel = "Log Mean Diameter")
-legend("topright", legend = levels(IDs.long.mod$Conf), col = c("red3", "blue2", "green4"), lty = 1, lwd = 3)
-dev.off()
+# simple linear model
 
 
 # 9. Create a confusion matrix --------------------------------------------
