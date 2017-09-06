@@ -2,7 +2,7 @@
 # Project: Repeatability
 # Author: Isabel Fenton
 # Date created: 9/3/2017
-# Date last edited: 30/8/2017
+# Date last edited: 6/9/2017
 # 
 # Code for analysis of the repeatability results. For more details see Lab book Repeatability.docx)
 # 
@@ -718,7 +718,44 @@ r.squaredGLMM(m5f.me)
 
 write.csv(Anova(m5f.me), file = "Outputs/anova_m5f_me.csv")
 
-# 7d. Model plotting ------------------------------------------------------
+
+# 7d. marginal effects of the different EVs -------------------------------
+summary(m5f.me)
+r.squaredGLMM(m5f.me) # r2m = 0.4366040
+
+# drop each EV in turn to get the marginal effect
+# log size
+m5f.me.cLMD <- update(m5f.me, ~. - csLogMeanDia - csLogMeanDia:HowLong - csLogMeanDia:Taught - csLogMeanDia:Experience)
+summary(m5f.me.cLMD)
+r.squaredGLMM(m5f.me.cLMD) # r2m = 0.4022265
+0.4366040 - 0.4022265
+# how long
+m5f.me.HL <- update(m5f.me, ~. - HowLong - csLogMeanDia:HowLong)
+summary(m5f.me.HL)
+r.squaredGLMM(m5f.me.HL) # r2m = 0.3912333
+0.4366040 - 0.3912333
+# taught
+m5f.me.T <- update(m5f.me, ~. - Taught - csLogMeanDia:Taught)
+summary(m5f.me.T)
+r.squaredGLMM(m5f.me.T) # r2m = 0.2620388 
+0.4366040 - 0.2620388
+# Experience
+m5f.me.E <- update(m5f.me, ~. - Experience - csLogMeanDia:Experience)
+summary(m5f.me.E)
+r.squaredGLMM(m5f.me.E) # r2m = 0.4193970
+0.4366040 - 0.4193970
+# Specimen confidence
+m5f.me.C <- update(m5f.me, ~. - Conf)
+summary(m5f.me.C)
+r.squaredGLMM(m5f.me.C) # r2m = 0.3822157
+0.4366040 - 0.3822157
+# Species confidence
+m5f.me.SC <- update(m5f.me, ~. - SpConf)
+summary(m5f.me.SC)
+r.squaredGLMM(m5f.me.SC) # r2m = 0.4299028
+0.4366040 - 0.4299028
+
+# 7e. Model plotting ------------------------------------------------------
 # can't simplify further, so move to plotting
 pdf("Figures/GLM_effects.pdf")
 sjp.glmer(m5f.me)
