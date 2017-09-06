@@ -881,19 +881,39 @@ sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "Ta
 dev.off()
 
 # paper plots, we decided to just use sjp.glmer
+# the scale for the x-axis is currently not very informative (centred / scaled log mean diameter). See if I can work out what this is
+# (IDs.long.mod$logMeanDia - mean(IDs.long.mod$logMeanDia)) / sd(IDs.long.mod$logMeanDia)
+-1 * sd(IDs.long.mod$logMeanDia) + mean(IDs.long.mod$logMeanDia) # 5.297101
+0 * sd(IDs.long.mod$logMeanDia) + mean(IDs.long.mod$logMeanDia) # 5.793243
+1 * sd(IDs.long.mod$logMeanDia) + mean(IDs.long.mod$logMeanDia) # 6.289385
+2 * sd(IDs.long.mod$logMeanDia) + mean(IDs.long.mod$logMeanDia) # 6.785527
+# or unlogged:
+exp(-1 * sd(IDs.long.mod$logMeanDia) + mean(IDs.long.mod$logMeanDia)) # 199.7568
+exp(0 * sd(IDs.long.mod$logMeanDia) + mean(IDs.long.mod$logMeanDia)) # 328.0751
+exp(1 * sd(IDs.long.mod$logMeanDia) + mean(IDs.long.mod$logMeanDia)) # 538.8216
+exp(2 * sd(IDs.long.mod$logMeanDia) + mean(IDs.long.mod$logMeanDia)) # 884.9459
+# so if I want them at 200, 400, 600, 800
+(log(200) - mean(IDs.long.mod$logMeanDia)) / sd(IDs.long.mod$logMeanDia) # -0.9975478
+(log(400) - mean(IDs.long.mod$logMeanDia)) / sd(IDs.long.mod$logMeanDia) # 0.3995266
+(log(600) - mean(IDs.long.mod$logMeanDia)) / sd(IDs.long.mod$logMeanDia) # 1.216763
+(log(800) - mean(IDs.long.mod$logMeanDia)) / sd(IDs.long.mod$logMeanDia) # 1.796601
+
 png("Figures/Size_Taught_sjp_glmer.png")
 sjp.setTheme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2)
-sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c("Log Mean Diameter", "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5)
+p <- sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
+p$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
 
 png("Figures/Size_Exp_sjp_glmer.png")
 sjp.setTheme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white", legend.size = 1.2, legend.item.backcol = "white")
-sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c("Log Mean Diameter", "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5)
+p1 <- sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
+p1$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
 
 png("Figures/Size_HowLong_sjp_glmer.png")
 sjp.setTheme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white", legend.size = 1.2, legend.item.backcol = "white")
-sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c("Log Mean Diameter", "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5)
+p2 <- sjp.glmer(m5f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
+p2$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
 
 # 8. Try running a model with unordered factors ----------------------------------------------
@@ -1268,4 +1288,6 @@ dev.off()
 # 10. Producing summaries for people ---------------------------------------
 write.csv(completeIDs[, c("SpecNumber", "DefinitiveID", "ChealesID", "ChealesC", "fracCorr")], file = "Outputs/Repeatability_Cheales.csv", row.names = FALSE)
 
+# 11. Modelling mortality -------------------------------------------------
+mm <- glm((ID == "lost") ~ logMeanDia*DefinitiveID, data = IDs.long, family = "binomial")
 
