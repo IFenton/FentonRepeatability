@@ -1288,6 +1288,15 @@ dev.off()
 # 10. Producing summaries for people ---------------------------------------
 write.csv(completeIDs[, c("SpecNumber", "DefinitiveID", "ChealesID", "ChealesC", "fracCorr")], file = "Outputs/Repeatability_Cheales.csv", row.names = FALSE)
 
+# create personal summaries
+for (i in people[3:length(people)]) {
+  # extract the data
+  tmp <- completeIDs[, c("SpecNumber", "DefinitiveID", grep(i, names(completeIDs), value = TRUE), "fracCorr")]
+  tmp$Correct <- ifelse(tmp$DefinitiveID == tmp[, grep(paste(i, "ID", sep = ""), names (tmp))], "Yes", "No")
+  tmp$Correct <- ifelse(tmp[, grep(paste(i, "ID", sep = ""), names (tmp))] == "lost", NA, tmp$Correct)
+  write.csv(tmp, file = paste("Outputs/Repeatability_", i, ".csv", sep = ""), row.names = FALSE)
+}
+
 # 11. Modelling mortality -------------------------------------------------
 mm <- glm((ID == "lost") ~ logMeanDia*DefinitiveID, data = IDs.long, family = "binomial")
 
