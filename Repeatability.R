@@ -2,7 +2,7 @@
 # Project: Repeatability
 # Author: Isabel Fenton
 # Date created: 9/3/2017
-# Date last edited: 20/11/2017
+# Date last edited: 1/3/2018
 # 
 # Code for analysis of the repeatability results. For more details see Lab book Repeatability.docx)
 # 
@@ -35,6 +35,7 @@ rm(list = ls())
 
 source("../../../../../Dropbox/Documents/AdrianaDePalma/plotLmerMeans.R")
 source("Code/plotLmerMeansRepeat.R")
+source("../../Code/Confusion_matrix.R")
 
 dev.off()
 par.def <- par()
@@ -1296,6 +1297,21 @@ for (i in people[3:length(people)]) {
   tmp$Correct <- ifelse(tmp[, grep(paste(i, "ID", sep = ""), names (tmp))] == "lost", NA, tmp$Correct)
   write.csv(tmp, file = paste("Outputs/Repeatability_", i, ".csv", sep = ""), row.names = FALSE)
 }
+
+tmp <- IDs.long[, 1:4]
+tmp <- tmp[order(tmp$Person, tmp$SpecNumber),]
+tmp2 <- cbind(Person = "Definitive", completeIDs[,2:1], ID = completeIDs[, 2])
+tmp <- rbind(tmp, tmp2)
+# also personalised confusion matrices
+conf_mat(tmp, "ID", axis.col = "Person", axis1 = "Definitive", axis2 = "Fenton", abb.end = c("juvenile", "nonmacro"), axes.same = TRUE)
+for (i in people[3:length(people)]) {
+  # extract the data
+  png(paste("Outputs/Confusion_", i, ".png", sep = ""), 800, 800)
+  conf_mat(tmp, "ID", axis.col = "Person", axis1 = "Definitive", axis2 = i, abb.end = c("juvenile", "nonmacro", "lost", "unIDd"), axes.same = TRUE)
+  dev.off()
+}
+
+
 
 # 11. Modelling mortality -------------------------------------------------
 mm <- glm((ID == "lost") ~ logMeanDia*DefinitiveID, data = IDs.long, family = "binomial")
