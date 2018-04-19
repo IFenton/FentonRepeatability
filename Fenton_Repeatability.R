@@ -2,7 +2,7 @@
 # Project: Repeatability
 # Author: Isabel Fenton
 # Date created: 8/3/2018
-# Date last edited: 8/3/2018
+# Date last edited: 19/4/2018
 # 
 # Code for analysis of the repeatability paper
 # Fenton et al on foram repeatability
@@ -30,8 +30,6 @@ library(ade4) # for distinctiveness
 library(sjPlot) # plotting glms
 library(lme4) # for modelling
 library(stringr) # for confusion matrix axes
-library(broom) # alternative plotting
-library(ggplot2) # alternative plotting
 library(car) # p-values in the anova
 library(MuMIn) # r2 values for the model
 source("Code/Confusion_matrix.R")
@@ -653,146 +651,167 @@ rm(m1.fix)
 # optimal random structure
 opt.RS <- list()
 glmcon <- glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=3e5)) # stop convergence issues
-opt.RS$m1.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID) + (1|Person) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
+
+# test the different combination of random effects
+opt.RS$m1.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID/SpecNumber) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
 
 sjp.glm(opt.RS$m1.me, type = "pred", vars = c("csLogMeanDia", "DefinitiveID"), geom.colors = matlab.like(30))
 
-opt.RS$m2.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
+opt.RS$m2.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID/SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
 
-opt.RS$m3.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
+opt.RS$m3.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
 
-opt.RS$m4.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID), family = binomial, data = IDs.long.mod, control = glmcon)
+opt.RS$m4.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|DefinitiveID/SpecNumber) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
 
-opt.RS$m5.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|DefinitiveID) + (1|Person) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
+opt.RS$m5.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|DefinitiveID/SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
 
 opt.RS$m6.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|DefinitiveID) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
 
-opt.RS$m7.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|DefinitiveID) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
+opt.RS$m7.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|DefinitiveID), family = binomial, data = IDs.long.mod, control = glmcon)
 
-opt.RS$m8.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|DefinitiveID), family = binomial, data = IDs.long.mod, control = glmcon)
+opt.RS$m8.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
 
-opt.RS$m9.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|Person) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
+opt.RS$m9.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|DefinitiveID), family = binomial, data = IDs.long.mod, control = glmcon)
 
-opt.RS$m10.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
+opt.RS$m10.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|SpecNumber) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
 
-opt.RS$m11.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
+opt.RS$m11.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1 + csLogMeanDia|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
 
-anova(opt.RS$m1.me, opt.RS$m2.me, opt.RS$m3.me, opt.RS$m4.me, opt.RS$m5.me, opt.RS$m6.me, opt.RS$m7.me, opt.RS$m8.me, opt.RS$m9.me, opt.RS$m10.me, opt.RS$m11.me)
+opt.RS$m12.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|SpecNumber) + (1|Person), family = binomial, data = IDs.long.mod, control = glmcon)
 
-# best model is opt.RS$m5.me (i.e. no random slopes only random intercepts)
-summary(opt.RS$m5.me)
+opt.RS$m13.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpConf + Experience + Gender) + (1|SpecNumber), family = binomial, data = IDs.long.mod, control = glmcon)
 
-opt.RS$re.m5.me <- residuals(opt.RS$m5.me, type = "response")
-opt.RS$fi.m5.me <- fitted(opt.RS$m5.me)
-plot(opt.RS$fi.m5.me, opt.RS$re.m5.me)
+
+anova(opt.RS$m1.me, opt.RS$m2.me, opt.RS$m3.me, opt.RS$m4.me, opt.RS$m5.me, opt.RS$m6.me, opt.RS$m7.me, opt.RS$m8.me, opt.RS$m9.me, opt.RS$m10.me, opt.RS$m11.me, opt.RS$m12.me, opt.RS$m13.me)
+
+# best model is opt.RS$m1.me
+summary(opt.RS$m1.me)
+
+# output this result
+write.csv(anova(opt.RS$m1.me, opt.RS$m2.me, opt.RS$m3.me, opt.RS$m4.me, opt.RS$m5.me, opt.RS$m6.me, opt.RS$m7.me, opt.RS$m8.me, opt.RS$m9.me, opt.RS$m10.me, opt.RS$m11.me, opt.RS$m12.me, opt.RS$m13.me)
+, "F_Outputs/randomErrorComp.csv")
+
+opt.RS$re.m1.me <- residuals(opt.RS$m1.me, type = "response")
+opt.RS$fi.m1.me <- fitted(opt.RS$m1.me)
+plot(opt.RS$fi.m1.me, opt.RS$re.m1.me)
 
 # run model simplification
 opt.MS <- list()
-opt.MS$m5a.me <- update(opt.RS$m5.me, .~. -csLogMeanDia:Gender)
-anova(opt.RS$m5.me, opt.MS$m5a.me)
-summary(opt.MS$m5a.me)
-opt.MS$m5b.me <- update(opt.MS$m5a.me, .~. -csLogMeanDia:SpConf)
-anova(opt.MS$m5b.me, opt.MS$m5a.me)
-summary(opt.MS$m5b.me)
-opt.MS$m5c.me <- update(opt.MS$m5b.me, .~. -csLogMeanDia:csED)
-anova(opt.MS$m5b.me, opt.MS$m5c.me)
-summary(opt.MS$m5c.me)
-opt.MS$m5d.me <- update(opt.MS$m5c.me, .~. -csED)
-anova(opt.MS$m5d.me, opt.MS$m5c.me)
-summary(opt.MS$m5d.me)
-opt.MS$m5e.me <- update(opt.MS$m5d.me, .~. -csLogMeanDia:Conf)
-anova(opt.MS$m5d.me, opt.MS$m5e.me)
-summary(opt.MS$m5e.me)
-opt.MS$m5f.me <- update(opt.MS$m5e.me, .~. -Gender)
-anova(opt.MS$m5f.me, opt.MS$m5e.me)
-summary(opt.MS$m5f.me)
+opt.MS$m1a.me <- update(opt.RS$m1.me, .~. -csLogMeanDia:Gender)
+anova(opt.RS$m1.me, opt.MS$m1a.me)
+summary(opt.MS$m1a.me)
+opt.MS$m1b.me <- update(opt.MS$m1a.me, .~. -csLogMeanDia:SpConf)
+anova(opt.MS$m1b.me, opt.MS$m1a.me)
+summary(opt.MS$m1b.me)
+opt.MS$m1c.me <- update(opt.MS$m1b.me, .~. -csLogMeanDia:csED)
+anova(opt.MS$m1b.me, opt.MS$m1c.me)
+summary(opt.MS$m1c.me)
+opt.MS$m1d.me <- update(opt.MS$m1c.me, .~. -csED)
+anova(opt.MS$m1d.me, opt.MS$m1c.me)
+summary(opt.MS$m1d.me)
+opt.MS$m1e.me <- update(opt.MS$m1d.me, .~. -csLogMeanDia:Conf)
+anova(opt.MS$m1d.me, opt.MS$m1e.me)
+summary(opt.MS$m1e.me)
+opt.MS$m1f.me <- update(opt.MS$m1e.me, .~. -Gender)
+anova(opt.MS$m1f.me, opt.MS$m1e.me)
+summary(opt.MS$m1f.me)
 
-anova(opt.MS$m5f.me)
-Anova(opt.MS$m5f.me)
-r.squaredGLMM(opt.MS$m5f.me) # R2m: 0.437, R2c: 0.580
+anova(opt.MS$m1f.me)
+Anova(opt.MS$m1f.me)
+r.squaredGLMM(opt.MS$m1f.me) # R2m: 0.426, R2c: 0.571
 
-write.csv(Anova(opt.MS$m5f.me), file = "F_Outputs/anova_m5f_me.csv")
+write.csv(Anova(opt.MS$m1f.me), file = "F_Outputs/anova_m1f_me.csv")
 
 
 # 6d. marginal effects of the different EVs -------------------------------
-summary(opt.MS$m5f.me)
-r.squaredGLMM(opt.MS$m5f.me) # r2m = 0.4366
+summary(opt.MS$m1f.me)
+r.squaredGLMM(opt.MS$m1f.me) # r2m = 0.4263517
 
 # drop each EV in turn to get the marginal effect
 mar.eff <- list()
+
+# create a table of this data
+mar.eff.dat <- data.frame(EV = c("FullModel", "csLogMeanDia", "HowLong", "Taught", "Experience", "Conf", "SpConf"))
+mar.eff.dat$r2m <- NA
+mar.eff.dat$r2m[mar.eff.dat$EV == "FullModel"] <- r.squaredGLMM(opt.MS$m1f.me)["R2m"]
+
 # log size
-mar.eff$m5f.me.cLMD <- update(opt.MS$m5f.me, ~. - csLogMeanDia - csLogMeanDia:HowLong - csLogMeanDia:Taught - csLogMeanDia:Experience)
-summary(mar.eff$m5f.me.cLMD)
-r.squaredGLMM(mar.eff$m5f.me.cLMD) # r2m = 0.4022
-0.4366 - 0.4022 # 0.034
+mar.eff$m1f.me.cLMD <- update(opt.MS$m1f.me, ~. - csLogMeanDia - csLogMeanDia:HowLong - csLogMeanDia:Taught - csLogMeanDia:Experience)
+summary(mar.eff$m1f.me.cLMD)
+(mar.eff.dat$r2m[mar.eff.dat$EV == "csLogMeanDia"] <- r.squaredGLMM(mar.eff$m1f.me.cLMD)["R2m"]) # r2m = 0.3840455
+0.4263517 - 0.3840455 # 0.0423062
 # how long
-mar.eff$m5f.me.HL <- update(opt.MS$m5f.me, ~. - HowLong - csLogMeanDia:HowLong)
-summary(mar.eff$m5f.me.HL)
-r.squaredGLMM(mar.eff$m5f.me.HL) # r2m = 0.3912
-0.4366 - 0.3912 # 0.0454
+mar.eff$m1f.me.HL <- update(opt.MS$m1f.me, ~. - HowLong - csLogMeanDia:HowLong)
+summary(mar.eff$m1f.me.HL)
+(mar.eff.dat$r2m[mar.eff.dat$EV == "HowLong"] <- r.squaredGLMM(mar.eff$m1f.me.HL)["R2m"]) # r2m = 0.3807146
+0.4263517 - 0.3807146 # 0.0456371
 # taught
-mar.eff$m5f.me.T <- update(opt.MS$m5f.me, ~. - Taught - csLogMeanDia:Taught)
-summary(mar.eff$m5f.me.T)
-r.squaredGLMM(mar.eff$m5f.me.T) # r2m = 0.2620
-0.4366 - 0.2620 # 0.1746
+mar.eff$m1f.me.T <- update(opt.MS$m1f.me, ~. - Taught - csLogMeanDia:Taught)
+summary(mar.eff$m1f.me.T)
+(mar.eff.dat$r2m[mar.eff.dat$EV == "Taught"] <- r.squaredGLMM(mar.eff$m1f.me.T)["R2m"]) # r2m = 0.2512889
+0.4263517 - 0.2512889 # 0.1750628
 # Experience
-mar.eff$m5f.me.E <- update(opt.MS$m5f.me, ~. - Experience - csLogMeanDia:Experience)
-summary(mar.eff$m5f.me.E)
-r.squaredGLMM(mar.eff$m5f.me.E) # r2m = 0.4194
-0.4366 - 0.4194 # 0.0172
+mar.eff$m1f.me.E <- update(opt.MS$m1f.me, ~. - Experience - csLogMeanDia:Experience)
+summary(mar.eff$m1f.me.E)
+(mar.eff.dat$r2m[mar.eff.dat$EV == "Experience"] <- r.squaredGLMM(mar.eff$m1f.me.E)["R2m"]) # r2m = 0.4083618
+0.4263517 - 0.4083618 # 0.0179899
 # Specimen confidence
-mar.eff$m5f.me.C <- update(opt.MS$m5f.me, ~. - Conf)
-summary(mar.eff$m5f.me.C)
-r.squaredGLMM(mar.eff$m5f.me.C) # r2m = 0.3822
-0.4366 - 0.3822 # 0.0544
+mar.eff$m1f.me.C <- update(opt.MS$m1f.me, ~. - Conf)
+summary(mar.eff$m1f.me.C)
+(mar.eff.dat$r2m[mar.eff.dat$EV == "Conf"] <- r.squaredGLMM(mar.eff$m1f.me.C)["R2m"]) # r2m = 0.3733382
+0.4263517 - 0.3733382 # 0.0544
 # Species confidence
-mar.eff$m5f.me.SC <- update(opt.MS$m5f.me, ~. - SpConf)
-summary(mar.eff$m5f.me.SC)
-r.squaredGLMM(mar.eff$m5f.me.SC) # r2m = 0.4299
-0.4366 - 0.4299 # 0.0067
+mar.eff$m1f.me.SC <- update(opt.MS$m1f.me, ~. - SpConf)
+summary(mar.eff$m1f.me.SC)
+(mar.eff.dat$r2m[mar.eff.dat$EV == "SpConf"] <- r.squaredGLMM(mar.eff$m1f.me.SC)["R2m"]) # r2m = 0.4198742
+0.4263517 - 0.4198742 # 0.0064775
+
+mar.eff.dat$d.r2m <- mar.eff.dat$r2m[mar.eff.dat$EV == "FullModel"] - mar.eff.dat$r2m
+write.csv(mar.eff.dat, "F_Outputs/marginalEffects.csv", row.names = FALSE)
 
 # 6e. Model plotting ------------------------------------------------------
 # can't simplify further, so move to plotting
 pdf("F_Figures/GLM_effects.pdf")
-sjp.glmer(opt.MS$m5f.me)
-sjp.glmer(opt.MS$m5f.me, type = "fe")
-sjp.glmer(opt.MS$m5f.me, type = "eff")
-sjp.int(opt.MS$m5f.me, type = "eff")
+sjp.glmer(opt.MS$m1f.me)
+sjp.glmer(opt.MS$m1f.me, type = "fe")
+sjp.glmer(opt.MS$m1f.me, type = "eff")
+sjp.int(opt.MS$m1f.me, type = "eff")
 
-p <- sjp.glmer(opt.MS$m5f.me, type = "eff", facet.grid = FALSE, 
+p <- sjp.glmer(opt.MS$m1f.me, type = "eff", facet.grid = FALSE, 
              show.ci = TRUE, prnt.plot = FALSE)$plot.list
 # plot all marginal effects, as grid, proper x-axes
 # also, set margins for this example
 plot_grid(p, margin = c(0.3, 0.3, 0.3, 0.3))
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = "csLogMeanDia")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = "HowLong")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = "Taught")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = "Conf")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = "SpConf")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = "Experience")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "How Long")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "Taught")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "Conf"), title = "Specimen Confidence")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "SpConf"), title = "Species confidence")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "Experience")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = "csLogMeanDia")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = "HowLong")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = "Taught")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = "Conf")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = "SpConf")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = "Experience")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "How Long")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "Taught")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "Conf"), title = "Specimen Confidence")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "SpConf"), title = "Species confidence")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "Experience")
 dev.off()
 rm(p)
 
 # influence of size by species 
 png("F_Figures/GLM_size_sp.png", 1500, 1200, res = 120)
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "DefinitiveID"), geom.colors = rep("blue4", 26), show.ci = TRUE, cex = 10, cex.axis = 10, cex.labels = 10)
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "DefinitiveID"), geom.colors = rep("blue4", 26), show.ci = TRUE, cex = 10, cex.axis = 10, cex.labels = 10)
 dev.off()
 
 pdf("F_Figures/GLM_size.pdf", 10,7)
 for (i in 1:26){
-  sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "DefinitiveID"), facet.grid = FALSE, pch = ".", geom.colors = c(rep("grey90",i-1), "black", rep("grey90", 27-i)))
+  sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "DefinitiveID"), facet.grid = FALSE, pch = ".", geom.colors = c(rep("grey90",i-1), "black", rep("grey90", 27-i)))
 }
 dev.off()
 rm(i)
 
 # size by confidence
 png("F_Figures/Size_Conf_sjp_glmer.png")
-sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "Conf"), title = "Conf", show.ci = TRUE, facet.grid = FALSE)
+set_theme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white")
+sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "Conf"), title = "Conf", show.ci = TRUE, facet.grid = FALSE, show.legend = FALSE)
 dev.off()
 
 # paper plots
@@ -804,20 +823,20 @@ dev.off()
 (log(800) - mean(IDs.long.mod$logMeanDia)) / sd(IDs.long.mod$logMeanDia) # 1.796601
 
 png("F_Figures/Size_Taught_sjp_glmer.png")
-sjp.setTheme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2)
-p <- sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
+set_theme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white")
+p <- sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
 p$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
 
 png("F_Figures/Size_Exp_sjp_glmer.png")
-sjp.setTheme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white", legend.size = 1.2, legend.item.backcol = "white")
-p1 <- sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
+set_theme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white")
+p1 <- sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
 p1$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
 
 png("F_Figures/Size_HowLong_sjp_glmer.png")
-sjp.setTheme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white", legend.size = 1.2, legend.item.backcol = "white")
-p2 <- sjp.glmer(opt.MS$m5f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
+set_theme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white")
+p2 <- sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
 p2$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
 
@@ -826,31 +845,31 @@ dev.off()
 sp.idd <- read.csv("Data/Fenton_Specieslist.csv")$DefinitiveID
 conf.mat <- list()
 
-png("F_Figures/confusion_full_key.png", 800, 600)
+png("F_Figures/confusion_full_key.png", 1000, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost")
 dev.off()
 conf.mat$sp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$ID != "lost"], levels = sp.idd), factor(IDs.long$ID[IDs.long$ID != "lost"], levels = sp.idd))
 
 # confusion matrix for experienced workers
-png("F_Figures/confusion_exp_key.png", 800, 600)
+png("F_Figures/confusion_exp_key.png", 1000, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Experienced", subset.lev = "Experienced")
 dev.off()
 conf.mat$exp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Experienced"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Experienced"], levels = sp.idd))
 
 # confusion matrix for students
-png("F_Figures/confusion_stu_key.png", 800, 600)
+png("F_Figures/confusion_stu_key.png", 1000, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost")
 dev.off()
 conf.mat$stu <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Student"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Student"], levels = sp.idd))
 
 # confusion matrix for confident IDs
-png("F_Figures/confusion_conf_key.png", 800, 600)
+png("F_Figures/confusion_conf_key.png", 1000, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "y")
 dev.off()
 conf.mat$conf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "y"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "y"], levels = sp.idd))
 
 # confusion matrix for confident IDs
-png("F_Figures/confusion_unconf_key.png", 800, 600)
+png("F_Figures/confusion_unconf_key.png", 1000, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "n")
 dev.off()
 conf.mat$unconf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "n"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "n"], levels = sp.idd))
@@ -861,13 +880,13 @@ IDs.long$Size <- NA
 IDs.long$Size[IDs.long$MeanDia >= 200] <- "Large"
 IDs.long$Size[IDs.long$MeanDia < 200] <- "Small"
 
-png("F_Figures/confusion_large_key.png", 800, 600)
+png("F_Figures/confusion_large_key.png", 1000, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Large")
 dev.off()
 conf.mat$large <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Size == "Large"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Size == "Large"], levels = sp.idd))
 
 # confusion matrix for small specimens 
-png("F_Figures/confusion_small_key.png", 800, 600)
+png("F_Figures/confusion_small_key.png", 1000, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Small")
 dev.off()
 conf.mat$small <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Size == "Small"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Size == "Small"], levels = sp.idd))
