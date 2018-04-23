@@ -2,7 +2,7 @@
 # Project: Repeatability
 # Author: Isabel Fenton
 # Date created: 8/3/2018
-# Date last edited: 19/4/2018
+# Date last edited: 23/4/2018
 # 
 # Code for analysis of the repeatability paper
 # Fenton et al on foram repeatability
@@ -723,7 +723,7 @@ r.squaredGLMM(opt.MS$m1f.me) # R2m: 0.426, R2c: 0.571
 write.csv(Anova(opt.MS$m1f.me), file = "F_Outputs/anova_m1f_me.csv")
 
 
-# 6d. marginal effects of the different EVs -------------------------------
+# 6d. Marginal effects of the different EVs -------------------------------
 summary(opt.MS$m1f.me)
 r.squaredGLMM(opt.MS$m1f.me) # r2m = 0.4263517
 
@@ -843,6 +843,24 @@ dev.off()
 
 
 # 6f. Accuracy under a higher powered microscope ---------------------------
+new.IDs.long.mod <- IDs.long.mod
+
+# calculate sizes as if we were working on 50x rather than 35x magnification
+tmp <- new.IDs.long.mod$logMeanDia/35*50
+# rescale using the old mean / SD to make sure the data is on the right scale
+
+new.IDs.long.mod$csLogMeanDia <- (tmp - mean(IDs.long.mod$logMeanDia)) / sd(IDs.long.mod$logMeanDia)
+summary(IDs.long.mod$rs.csLogMeanDia)
+rm(tmp)
+
+# predict the correctness using this new data
+pred.val.rs <- predict(opt.MS$m1f.me, newdata = new.IDs.long.mod, type = "response")
+summary(pred.val.rs)
+
+# compare this to the old data
+pred.val.orig <- predict(opt.MS$m1f.me, type = "response")
+summary(pred.val.orig)
+
 
 
 # 7. Create confusion matrices --------------------------------------------
