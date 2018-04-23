@@ -840,6 +840,11 @@ p2 <- sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"
 p2$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
 
+
+
+# 6f. Accuracy under a higher powered microscope ---------------------------
+
+
 # 7. Create confusion matrices --------------------------------------------
 # full confusion matrix
 sp.idd <- read.csv("Data/Fenton_Specieslist.csv")$DefinitiveID
