@@ -857,11 +857,41 @@ rm(tmp)
 pred.val.rs <- predict(opt.MS$m1f.me, newdata = new.IDs.long.mod, type = "response")
 summary(pred.val.rs)
 
-# compare this to the old data
+# compare this new data to the old data
 pred.val.orig <- predict(opt.MS$m1f.me, type = "response")
 summary(pred.val.orig)
 
+## to understand this data, compare the percentage correct from the smaller dataset used in the modelling to the full dataset
+# full data
+tmp <- people.df$fracCorrSp[3:nrow(people.df)]
+names(tmp) <- people.df$Name[3:nrow(people.df)]
+tmp <- tmp[order(names(tmp))]
+tmp
+# modelled dataset
+tapply(IDs.long.mod$Corr, IDs.long.mod$Person, function(x) sum(x) / length(x))
+plot(tmp, tapply(IDs.long.mod$Corr, IDs.long.mod$Person, function(x) sum(x) / length(x)), xlab = "Full dataset", ylab = "Modelling dataset", pch = 16, col = grepl("Exp", levels(IDs.long.mod$Person)) + 1)
+abline(0, 1)
+# some differences, which is to be expected as they are slightly different datasets, but generally similar. 
 
+# how do these compare with the model predictions
+tapply(pred.val.orig, IDs.long.mod$Person, mean)
+plot(tapply(IDs.long.mod$Corr, IDs.long.mod$Person, function(x) sum(x) / length(x)), tapply(pred.val.orig, IDs.long.mod$Person, mean), xlab = "Modelling dataset", ylab = "Predicted accuracy", pch = 16, col = grepl("Exp", levels(IDs.long.mod$Person)) + 1)
+abline(0, 1)
+# again some differences, but generally similar (again to be expected, as these are modelled results)
+
+# so how much better would the results be if a larger magnification was used. 
+mean(pred.val.rs)
+mean(pred.val.orig)
+
+# or split by person
+tapply(pred.val.rs, IDs.long.mod$Person, mean)
+tapply(pred.val.orig, IDs.long.mod$Person, mean)
+plot(tapply(pred.val.orig, IDs.long.mod$Person, mean), tapply(pred.val.rs, IDs.long.mod$Person, mean), xlab = "Original predicted accuracy", ylab = "Rescaled predicted accuracy", pch = 16, col = grepl("Exp", levels(IDs.long.mod$Person)) + 1)
+abline(0, 1)
+
+# or split by groups
+tapply(pred.val.rs, grepl("Exp", IDs.long.mod$Person), mean)
+tapply(pred.val.orig, grepl("Exp", IDs.long.mod$Person), mean)
 
 # 7. Create confusion matrices --------------------------------------------
 # full confusion matrix
