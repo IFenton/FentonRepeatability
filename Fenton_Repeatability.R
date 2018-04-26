@@ -913,7 +913,7 @@ dev.off()
 conf.mat$stu <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Student"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Student"], levels = sp.idd))
 
 # confusion matrix for confident IDs
-png("F_Figures/confusion_conf_key.png", 900, 700)
+png("F_Figures/confusion_conf_key.png", 900, 720)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "y", xlab = "Individual ID")
 dev.off()
 conf.mat$conf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "y"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "y"], levels = sp.idd))
