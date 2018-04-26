@@ -896,31 +896,31 @@ sp.idd <- read.csv("Data/Fenton_Specieslist.csv")$DefinitiveID
 conf.mat <- list()
 
 png("F_Figures/confusion_full_key.png", 1000, 700)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", xlab = "Individual ID")
 dev.off()
 conf.mat$sp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$ID != "lost"], levels = sp.idd), factor(IDs.long$ID[IDs.long$ID != "lost"], levels = sp.idd))
 
 # confusion matrix for experienced workers
 png("F_Figures/confusion_exp_key.png", 900, 700)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Experienced", subset.lev = "Experienced")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Experienced", subset.lev = "Experienced", xlab = "Individual ID")
 dev.off()
 conf.mat$exp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Experienced"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Experienced"], levels = sp.idd))
 
 # confusion matrix for students
 png("F_Figures/confusion_stu_key.png", 1000, 700)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", xlab = "Individual ID")
 dev.off()
 conf.mat$stu <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Student"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Student"], levels = sp.idd))
 
 # confusion matrix for confident IDs
 png("F_Figures/confusion_conf_key.png", 900, 700)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "y")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "y", xlab = "Individual ID")
 dev.off()
 conf.mat$conf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "y"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "y"], levels = sp.idd))
 
 # confusion matrix for unconfident IDs
 png("F_Figures/confusion_unconf_key.png", 950, 700)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "n")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "n", xlab = "Individual ID")
 dev.off()
 conf.mat$unconf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "n"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "n"], levels = sp.idd))
 
@@ -931,13 +931,13 @@ IDs.long$Size[IDs.long$MeanDia >= 200] <- "Large"
 IDs.long$Size[IDs.long$MeanDia < 200] <- "Small"
 
 png("F_Figures/confusion_large_key.png", 1000, 650)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Large")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Large", xlab = "Individual ID")
 dev.off()
 conf.mat$large <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Size == "Large"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Size == "Large"], levels = sp.idd))
 
 # confusion matrix for small specimens 
 png("F_Figures/confusion_small_key.png", 900, 500)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Small")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Small", xlab = "Individual ID")
 dev.off()
 conf.mat$small <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Size == "Small"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Size == "Small"], levels = sp.idd))
 
