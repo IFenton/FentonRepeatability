@@ -34,9 +34,6 @@ library(car) # p-values in the anova
 library(MuMIn) # r2 values for the model
 source("Code/Confusion_matrix.R")
 
-dev.off()
-par.def <- par()
-
 # 1. Load in the data -----------------------------------------------------
 SpeciesData <- read.csv("Data/Fenton_SpeciesData.csv")
 str(SpeciesData)
@@ -154,7 +151,7 @@ sum(completeIDs[,grep("Exp1", names(completeIDs))[1]] == completeIDs$DefinitiveI
 people.df$fracCorrSp <- apply(completeIDs[, people.col], 2, function(x) sum(x == completeIDs$DefinitiveID) / sum(x != "lost"))
 mean(people.df$fracCorrSp) # 0.63
 median(people.df$fracCorrSp[!is.na(people.df$Experienced)]) # 0.59
-median(people.df$fracCorrSp[people.df$Experienced == "Experienced"], na.rm = TRUE) # 0.78
+median(people.df$fracCorrSp[people.df$Experienced == "Experienced"], na.rm = TRUE) # 0.79
 median(people.df$fracCorrSp[people.df$Experienced == "Student"], na.rm = TRUE) # 0.57
 
 # genus
@@ -176,10 +173,6 @@ with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSp, add = TRUE,
 axis(1, c(0,1,2), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
 text(0:2, 0.95, paste("(", c(sum(!is.na(people.df$Experienced)), sum(people.df$Experienced == "Experienced", na.rm = TRUE), sum(people.df$Experienced == "Student", na.rm = TRUE)), ")", sep = ""))
 dev.off()
-
-median(people.df$fracCorrSp[!is.na(people.df$Experienced)]) # 0.59
-median(people.df$fracCorrSp[people.df$Experienced == "Experienced"], na.rm = TRUE) # 0.79
-median(people.df$fracCorrSp[people.df$Experienced == "Student"], na.rm = TRUE) # 0.57
 
 ## Split by confidence 
 # number of identifications by confidence (working at specimen level)
@@ -428,7 +421,7 @@ sum(!is.na(people.df$fracCorrNm[people.df$Experienced == "Experienced"])) # 3
 sum(!is.na(people.df$fracCorrNn[people.df$Experienced == "Experienced"])) # 2
 sum(!is.na(people.df$fracCorrYy[people.df$Experienced == "Student"])) # 19
 sum(!is.na(people.df$fracCorrYm[people.df$Experienced == "Student"])) # 19
-sum(!is.na(people.df$fracCorrYn[people.df$Experienced == "Student"])) # 19
+sum(!is.na(people.df$fracCorrYn[people.df$Experienced == "Student"])) # 14
 sum(!is.na(people.df$fracCorrMy[people.df$Experienced == "Student"])) # 2
 sum(!is.na(people.df$fracCorrMm[people.df$Experienced == "Student"])) # 3
 sum(!is.na(people.df$fracCorrMn[people.df$Experienced == "Student"])) # 1
@@ -436,6 +429,7 @@ sum(!is.na(people.df$fracCorrNy[people.df$Experienced == "Student"])) # 19
 sum(!is.na(people.df$fracCorrNm[people.df$Experienced == "Student"])) # 18
 sum(!is.na(people.df$fracCorrNn[people.df$Experienced == "Student"])) # 18
 
+# what is the median of the number of specimens
 # number of Yes yes
 median(people.df$numcYy[!is.na(people.df$Experienced) & people.df$numcYy > 0]) # 38
 median(people.df$numcYy[people.df$Experienced == "Experienced" & people.df$numcYy > 0], na.rm = TRUE) # 46.5
@@ -512,7 +506,7 @@ median(people.df$fracCorr125[people.df$Experienced == "Experienced"], na.rm = TR
 median(people.df$fracCorr125[people.df$Experienced == "Student"], na.rm = TRUE) # 0.37
 
 # percent correct if 200-400
-median(people.df$fracCorr200[!is.na(people.df$Experienced)], na.rm = TRUE) # 0.56
+median(people.df$fracCorr200[!is.na(people.df$Experienced)], na.rm = TRUE) # 0.55
 median(people.df$fracCorr200[people.df$Experienced == "Experienced"], na.rm = TRUE) # 0.75
 median(people.df$fracCorr200[people.df$Experienced == "Student"], na.rm = TRUE) # 0.53
 
@@ -827,19 +821,21 @@ set_theme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gri
 p <- sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "Taught"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
 p$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
+rm(p)
 
 png("F_Figures/Size_Exp_sjp_glmer.png")
 set_theme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white")
 p1 <- sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "Experience"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
 p1$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
+rm(p1)
 
 png("F_Figures/Size_HowLong_sjp_glmer.png")
 set_theme(theme_classic(), axis.title.size = 1.4, axis.textsize = 1.2, panel.gridcol = "white")
 p2 <- sjp.glmer(opt.MS$m1f.me, type = "pred", vars = c("csLogMeanDia", "HowLong"), title = "", show.ci = TRUE, facet.grid = FALSE, axis.title = c(expression(paste("Mean Diameter / ", mu, "m")), "Percentage Correct"), geom.size = 1.2, point.alpha = 0.5, prnt.plot = FALSE)
 p2$plot + scale_x_continuous(breaks = c(-0.9975478, 0.3995266, 1.216763, 1.796601), labels = c(200, 400, 600, 800))
 dev.off()
-
+rm(p2)
 
 
 # 6f. Accuracy under a higher powered microscope ---------------------------
@@ -850,7 +846,7 @@ tmp <- new.IDs.long.mod$logMeanDia/35*50
 # rescale using the old mean / SD to make sure the data is on the right scale
 
 new.IDs.long.mod$csLogMeanDia <- (tmp - mean(IDs.long.mod$logMeanDia)) / sd(IDs.long.mod$logMeanDia)
-summary(IDs.long.mod$rs.csLogMeanDia)
+summary(IDs.long.mod$csLogMeanDia)
 rm(tmp)
 
 # predict the correctness using this new data
@@ -892,6 +888,7 @@ abline(0, 1)
 # or split by groups
 tapply(pred.val.rs, grepl("Exp", IDs.long.mod$Person), mean)
 tapply(pred.val.orig, grepl("Exp", IDs.long.mod$Person), mean)
+rm(tmp)
 
 # 7. Create confusion matrices --------------------------------------------
 # full confusion matrix
@@ -904,7 +901,7 @@ dev.off()
 conf.mat$sp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$ID != "lost"], levels = sp.idd), factor(IDs.long$ID[IDs.long$ID != "lost"], levels = sp.idd))
 
 # confusion matrix for experienced workers
-png("F_Figures/confusion_exp_key.png", 1000, 700)
+png("F_Figures/confusion_exp_key.png", 900, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Experienced", subset.lev = "Experienced")
 dev.off()
 conf.mat$exp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Experienced"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Experienced"], levels = sp.idd))
@@ -916,13 +913,13 @@ dev.off()
 conf.mat$stu <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Student"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Student"], levels = sp.idd))
 
 # confusion matrix for confident IDs
-png("F_Figures/confusion_conf_key.png", 1000, 700)
+png("F_Figures/confusion_conf_key.png", 900, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "y")
 dev.off()
 conf.mat$conf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "y"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "y"], levels = sp.idd))
 
-# confusion matrix for confident IDs
-png("F_Figures/confusion_unconf_key.png", 1000, 700)
+# confusion matrix for unconfident IDs
+png("F_Figures/confusion_unconf_key.png", 950, 700)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "n")
 dev.off()
 conf.mat$unconf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "n"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "n"], levels = sp.idd))
@@ -933,13 +930,13 @@ IDs.long$Size <- NA
 IDs.long$Size[IDs.long$MeanDia >= 200] <- "Large"
 IDs.long$Size[IDs.long$MeanDia < 200] <- "Small"
 
-png("F_Figures/confusion_large_key.png", 1000, 700)
+png("F_Figures/confusion_large_key.png", 1000, 650)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Large")
 dev.off()
 conf.mat$large <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Size == "Large"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Size == "Large"], levels = sp.idd))
 
 # confusion matrix for small specimens 
-png("F_Figures/confusion_small_key.png", 1000, 700)
+png("F_Figures/confusion_small_key.png", 900, 500)
 conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Small")
 dev.off()
 conf.mat$small <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Size == "Small"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Size == "Small"], levels = sp.idd))
@@ -956,3 +953,4 @@ conf.mat$conf$overall # kappa : 0.76
 conf.mat$unconf$overall # kappa : 0.21
 conf.mat$large$overall # kappa : 0.64
 conf.mat$small$overall # kappa : 0.38
+
