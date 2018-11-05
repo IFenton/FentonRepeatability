@@ -2,7 +2,7 @@
 # Project: Repeatability
 # Author: Isabel Fenton
 # Date created: 8/3/2018
-# Date last edited: 23/4/2018
+# Date last edited: 20/7/2018
 # 
 # Code for analysis of the repeatability paper
 # Fenton et al on foram repeatability
@@ -20,7 +20,8 @@ rm(list = ls())
 # Fenton_Specieslist.csv - list of species
 
 # Outputs -----------------------------------------------------------------
-# F_Figures are produced in a folder /F_F_Figures
+# Figures require a folder /F_Figures in which they are created
+# Other outputs require a folder /F_Outputs in which they are created
 
 # Source files / libraries ------------------------------------------------
 library(cluster) # for the dendrogram
@@ -218,8 +219,8 @@ hist(people.df$fracCorrNwoUID)
 # percentage accuracy by confidence
 png("F_Figures/Percent accuracy conf.png")
 plot(NULL, ylim = c(0, 1), xlim = c(0, 4.8), xaxt = "n", cex.axis = 1.5, xlab = "", ylab = "", las = 1)
-with(people.df, boxplot(fracCorrY ~ Experienced, boxwex = 0.2, col = c("blue3", "purple2"), at = c(1.8, 3.3), add = TRUE, xaxt = "n", yaxt = "n", xlim = c(0, 4.8)))
-with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
+with(people.df, boxplot(fracCorrY ~ Experienced, boxwex = 0.2, col = c("blue4", "purple4"), at = c(1.8, 3.3), add = TRUE, xaxt = "n", yaxt = "n", xlim = c(0, 4.8)))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red4", xaxt = "n", yaxt = "n"))
 axis(1, c(0.6,2.1,3.6), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
 
 with(people.df, boxplot(fracCorrM ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE, yaxt = "n"))
@@ -228,7 +229,18 @@ with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrM, add = TRUE, 
 with(people.df, boxplot(fracCorrNwoUID ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("steelblue3", "plum2"), cex.axis = 1.5, at = c(2.4, 3.9), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrNwoUID, add = TRUE, at = 0.9, boxwex = 0.4, col = "indianred2", xaxt = "n", yaxt = "n"))
 
-legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n", cex = 1.2)
+text(4.1, .985, "yes", cex = 1.2, adj = c(1, 0.5))
+text(4.1, .935, "maybe", cex = 1.2, adj = c(1, 0.5))
+text(4.1, .885, "no", cex = 1.2, adj = c(1, 0.5))
+rect(4.65, .964, 4.8, .992, col = "purple4")
+rect(4.65, .914, 4.8, .942, col = "darkorchid2")
+rect(4.65, .864, 4.8, .892, col = "plum2")
+rect(4.4, .964, 4.55, .992, col = "blue4")
+rect(4.4, .914, 4.55, .942, col = "royalblue3")
+rect(4.4, .864, 4.55, .892, col = "steelblue3")
+rect(4.15, .964, 4.3, .992, col = "red4")
+rect(4.15, .914, 4.3, .942, col = "firebrick2")
+rect(4.15, .864, 4.3, .892, col = "indianred2")
 dev.off()
 
 # percent correct if yes
@@ -278,10 +290,21 @@ axis(1, c(0.6,2.1,3.6), c("Full", levels(people.df$Experienced)), cex.axis = 1.5
 with(people.df, boxplot(fracCorrSM ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSM, add = TRUE, at = 0.6, boxwex = 0.4, col = "firebrick2", xaxt = "n", yaxt = "n"))
 
-with(people.df, boxplot(fracCorrSY ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(1.8, 3.3), add = TRUE, yaxt = "n"))
-with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
+with(people.df, boxplot(fracCorrSY ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue4", "purple4"), cex.axis = 1.5, at = c(1.8, 3.3), add = TRUE, yaxt = "n"))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red4", xaxt = "n", yaxt = "n"))
 
-legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n", cex = 1.2)
+text(4.1, .985, "yes", cex = 1.2, adj = c(1, 0.5))
+text(4.1, .935, "maybe", cex = 1.2, adj = c(1, 0.5))
+text(4.1, .885, "no", cex = 1.2, adj = c(1, 0.5))
+rect(4.65, .964, 4.8, .992, col = "purple4")
+rect(4.65, .914, 4.8, .942, col = "darkorchid2")
+rect(4.65, .864, 4.8, .892, col = "plum2")
+rect(4.4, .964, 4.55, .992, col = "blue4")
+rect(4.4, .914, 4.55, .942, col = "royalblue3")
+rect(4.4, .864, 4.55, .892, col = "steelblue3")
+rect(4.15, .964, 4.3, .992, col = "red4")
+rect(4.15, .914, 4.3, .942, col = "firebrick2")
+rect(4.15, .864, 4.3, .892, col = "indianred2")
 dev.off()
 
 # percent correct if yes
@@ -345,21 +368,6 @@ for (i in 1:(length(people.col) - 2)){
   people.df$fracCorrNn[2 + i] <- sum(completeIDs[, people.col[2+i]] == completeIDs$DefinitiveID & sapply(1:100, function (x) ifelse(completeIDs$DefinitiveID[x] %in% species, as.character(personData[personData$Person == people[i+2], as.character(completeIDs$DefinitiveID[x])]), NA)) == "n" & completeIDs[, p.conf.col[i]] == "n", na.rm = TRUE) / people.df$numcNn[2 + i] 
 }
 rm(i)
-
-png("F_Figures/Percent accuracy species level.png")
-plot(NULL, ylim = c(0, 1), xlim = c(0, 4.8), xaxt = "n", cex.axis = 1.5, xlab = "", ylab = "", las = 2)
-with(people.df, boxplot(fracCorrSN ~ Experienced, boxwex = 0.2, col = c("steelblue3", "plum2"), at = c(2.4, 3.9), add = TRUE, xaxt = "n", yaxt = "n", xlim = c(0, 4.8)))
-with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSN, add = TRUE, at = 0.9, boxwex = 0.4, col = "indianred2", xaxt = "n", yaxt = "n"))
-axis(1, c(0.6,2.1,3.6), c("Full", levels(people.df$Experienced)), cex.axis = 1.5)
-
-with(people.df, boxplot(fracCorrSM ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE, yaxt = "n"))
-with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSM, add = TRUE, at = 0.6, boxwex = 0.4, col = "firebrick2", xaxt = "n", yaxt = "n"))
-
-with(people.df, boxplot(fracCorrSY ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(1.8, 3.3), add = TRUE, yaxt = "n"))
-with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorrSY, add = TRUE, at = 0.3, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
-
-legend("topright", c("yes", "maybe", "no"), fill = c("black", "grey50", "grey80"), bty = "n", cex = 1.2)
-dev.off()
 
 # percent correct if Yes yes
 median(people.df$fracCorrYy[!is.na(people.df$Experienced)]) # 0.84
@@ -494,10 +502,22 @@ axis(1, c(0.6,2.1,3.6), c("Full", levels(people.df$Experienced)), cex.axis = 1.5
 with(people.df, boxplot(fracCorr200 ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("royalblue3", "darkorchid2"), cex.axis = 1.5, at = c(2.1, 3.6), add = TRUE, yaxt = "n"))
 with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorr200, add = TRUE, at = 0.6, boxwex = 0.4, col = "firebrick2", xaxt = "n", yaxt = "n"))
 
-with(people.df, boxplot(fracCorr400 ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue3", "purple2"), cex.axis = 1.5, at = c(2.4, 3.9), add = TRUE, yaxt = "n"))
-with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorr400, add = TRUE, at = 0.9, boxwex = 0.4, col = "red2", xaxt = "n", yaxt = "n"))
+with(people.df, boxplot(fracCorr400 ~ Experienced, xaxt = "n", boxwex = 0.2, col = c("blue4", "purple4"), cex.axis = 1.5, at = c(2.4, 3.9), add = TRUE, yaxt = "n"))
+with(people.df[!is.na(people.df$Experienced), ], boxplot(fracCorr400, add = TRUE, at = 0.9, boxwex = 0.4, col = "red4", xaxt = "n", yaxt = "n"))
 
-legend(3.4, 0.16, c(expression(paste(">400 ", mu, "m")), expression(paste("200–400 ", mu, "m")), expression(paste("125–200 ", mu, "m"))), fill = c("black", "grey50", "grey80"), bty = "n", cex = 1.2)
+text(4.1, .1, expression(paste(">400 ", mu, "m")), cex = 1.2, adj = c(1, 0.5))
+text(4.1, .05, expression(paste("200–400 ", mu, "m")), cex = 1.2, adj = c(1, 0.5))
+text(4.1, 0, expression(paste("125–200 ", mu, "m")), cex = 1.2, adj = c(1, 0.5))
+rect(4.65, .089, 4.8, .117, col = "purple4")
+rect(4.65, .039, 4.8, .067, col = "darkorchid2")
+rect(4.65, -.011, 4.8, .017, col = "plum2")
+rect(4.4, .089, 4.55, .117, col = "blue4")
+rect(4.4, .039, 4.55, .067, col = "royalblue3")
+rect(4.4, -.011, 4.55, .017, col = "steelblue3")
+rect(4.15, .089, 4.3, .117, col = "red4")
+rect(4.15, .039, 4.3, .067, col = "firebrick2")
+rect(4.15, -.011, 4.3, .017, col = "indianred2")
+
 dev.off()
 
 # percent correct if 125-200
@@ -678,7 +698,7 @@ opt.RS$m13.me <- glmer(Corr ~ csLogMeanDia*(HowLong + Taught + csED + Conf + SpC
 
 anova(opt.RS$m1.me, opt.RS$m2.me, opt.RS$m3.me, opt.RS$m4.me, opt.RS$m5.me, opt.RS$m6.me, opt.RS$m7.me, opt.RS$m8.me, opt.RS$m9.me, opt.RS$m10.me, opt.RS$m11.me, opt.RS$m12.me, opt.RS$m13.me)
 
-# best model is opt.RS$m1.me
+# best full model is opt.RS$m1.me based on random effects 
 summary(opt.RS$m1.me)
 
 # output this result
@@ -896,31 +916,31 @@ sp.idd <- read.csv("Data/Fenton_Specieslist.csv")$DefinitiveID
 conf.mat <- list()
 
 png("F_Figures/confusion_full_key.png", 1000, 700)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", xlab = "Individual ID")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", xlab = "Individual ID", grid = TRUE)
 dev.off()
 conf.mat$sp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$ID != "lost"], levels = sp.idd), factor(IDs.long$ID[IDs.long$ID != "lost"], levels = sp.idd))
 
 # confusion matrix for experienced workers
 png("F_Figures/confusion_exp_key.png", 900, 700)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Experienced", subset.lev = "Experienced", xlab = "Individual ID")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Experienced", subset.lev = "Experienced", xlab = "Individual ID", grid = TRUE)
 dev.off()
 conf.mat$exp <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Experienced"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Experienced"], levels = sp.idd))
 
 # confusion matrix for students
 png("F_Figures/confusion_stu_key.png", 1000, 700)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", xlab = "Individual ID")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Experienced", subset.lev = "Student", xlab = "Individual ID", grid = TRUE)
 dev.off()
 conf.mat$stu <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Experienced == "Student"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Experienced == "Student"], levels = sp.idd))
 
 # confusion matrix for confident IDs
 png("F_Figures/confusion_conf_key.png", 900, 720)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "y", xlab = "Individual ID")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "y", xlab = "Individual ID", grid = TRUE)
 dev.off()
 conf.mat$conf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "y"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "y"], levels = sp.idd))
 
 # confusion matrix for unconfident IDs
 png("F_Figures/confusion_unconf_key.png", 950, 700)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "n", xlab = "Individual ID")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Conf", subset.lev = "n", xlab = "Individual ID", grid = TRUE)
 dev.off()
 conf.mat$unconf <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Conf == "n"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Conf == "n"], levels = sp.idd))
 
@@ -931,13 +951,13 @@ IDs.long$Size[IDs.long$MeanDia >= 200] <- "Large"
 IDs.long$Size[IDs.long$MeanDia < 200] <- "Small"
 
 png("F_Figures/confusion_large_key.png", 1000, 650)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Large", xlab = "Individual ID")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Large", xlab = "Individual ID", grid = TRUE)
 dev.off()
 conf.mat$large <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Size == "Large"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Size == "Large"], levels = sp.idd))
 
 # confusion matrix for small specimens 
 png("F_Figures/confusion_small_key.png", 900, 500)
-conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Small", xlab = "Individual ID")
+conf_mat(IDs.long, "ID", "DefinitiveID", axes.same = FALSE, abb.end = c("juvenile", "nonmacro", "unIDd"), sp.exc = "lost", subset.col = "Size", subset.lev = "Small", xlab = "Individual ID", grid = TRUE)
 dev.off()
 conf.mat$small <- confusionMatrix(factor(IDs.long$DefinitiveID[IDs.long$Size == "Small"], levels = sp.idd), factor(IDs.long$ID[IDs.long$Size == "Small"], levels = sp.idd))
 
@@ -954,3 +974,5 @@ conf.mat$unconf$overall # kappa : 0.21
 conf.mat$large$overall # kappa : 0.64
 conf.mat$small$overall # kappa : 0.38
 
+# extract the confusion matrices as .csv files
+lapply(seq_along(conf.mat), function(i) write.csv(conf.mat[[i]]$table, paste("F_Outputs/", names(conf.mat)[i], ".csv", sep = "")))
